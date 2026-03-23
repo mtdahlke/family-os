@@ -1,0 +1,1243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Family OS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;600;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --gold:#E8A200;--gold-bg:#FFF8E6;--green:#1B6B3A;--green-light:#E8F5EE;
+  --red:#C0392B;--red-light:#FDECEA;--blue:#1A4FAD;--blue-light:#EBF0FB;
+  --purple:#6B21A8;--purple-light:#F3E8FF;--orange:#D97706;--orange-light:#FEF3C7;
+  --dark:#111827;--gray-2:#374151;--gray-3:#6B7280;--gray-4:#D1D5DB;
+  --gray-5:#F3F4F6;--gray-6:#F9FAFB;
+  --radius:12px;--radius-lg:16px;
+  --shadow:0 1px 4px rgba(0,0,0,.08),0 4px 16px rgba(0,0,0,.06);
+}
+body{font-family:'Inter',sans-serif;background:var(--gray-5);color:var(--dark);min-height:100vh;overflow-x:hidden;}
+.app{max-width:900px;margin:0 auto;padding:0 0 80px;}
+
+/* SYNC INDICATOR */
+#sync-bar{position:fixed;top:0;left:0;right:0;height:3px;background:var(--gold);z-index:9999;transition:opacity .5s;opacity:0;}
+#sync-bar.syncing{opacity:1;animation:sync-pulse 1s ease-in-out infinite;}
+@keyframes sync-pulse{0%,100%{opacity:.4}50%{opacity:1}}
+#sync-status{position:fixed;bottom:8px;right:8px;font-size:10px;font-weight:600;padding:3px 8px;border-radius:20px;background:rgba(0,0,0,.6);color:white;z-index:9998;opacity:0;transition:opacity .5s;pointer-events:none;}
+#sync-status.show{opacity:1;}
+
+/* LOGIN */
+#login-screen{min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:24px;background:var(--dark);}
+.login-logo{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;color:var(--gold);letter-spacing:3px;text-transform:uppercase;margin-bottom:4px;}
+.login-sub{font-size:12px;color:#6B7280;letter-spacing:2px;margin-bottom:36px;}
+.login-loading{font-size:13px;color:#6B7280;margin-top:16px;display:flex;align-items:center;gap:8px;}
+.login-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;width:100%;max-width:460px;}
+.login-btn{display:flex;flex-direction:column;align-items:center;gap:7px;padding:18px 10px;background:rgba(255,255,255,.06);border:1.5px solid rgba(255,255,255,.1);border-radius:var(--radius-lg);cursor:pointer;transition:all .2s;}
+.login-btn:hover{background:rgba(255,255,255,.12);border-color:var(--gold);transform:translateY(-2px);}
+.login-avatar{font-size:30px;line-height:1;}
+.login-name{font-family:'Oswald',sans-serif;font-size:14px;color:white;letter-spacing:1px;}
+.login-role{font-size:10px;color:#6B7280;}
+.login-pin-wrap{margin-top:22px;width:100%;max-width:260px;}
+.login-pin-label{font-size:13px;color:#9CA3AF;text-align:center;margin-bottom:10px;}
+.pin-dots{display:flex;justify-content:center;gap:12px;margin-bottom:14px;}
+.pin-dot{width:15px;height:15px;border-radius:50%;border:2px solid #374151;background:transparent;transition:all .15s;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);}
+.pin-pad{display:grid;grid-template-columns:repeat(3,1fr);gap:7px;}
+.pin-key{padding:13px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.1);border-radius:9px;font-family:'Oswald',sans-serif;font-size:19px;font-weight:600;color:white;cursor:pointer;transition:all .15s;text-align:center;}
+.pin-key:hover{background:rgba(255,255,255,.15);}
+.pin-key:active{transform:scale(.95);}
+.pin-error{font-size:12px;color:#F87171;text-align:center;margin-top:7px;height:18px;}
+.back-btn{background:none;border:none;color:#6B7280;font-size:12px;cursor:pointer;margin-top:14px;padding:7px;display:block;width:100%;text-align:center;}
+.back-btn:hover{color:white;}
+
+/* TOP BAR */
+.top-bar{background:var(--dark);padding:12px 18px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;}
+.top-bar-left{display:flex;align-items:center;gap:10px;}
+.top-bar-avatar{font-size:20px;width:34px;height:34px;background:rgba(255,255,255,.1);border-radius:50%;display:flex;align-items:center;justify-content:center;}
+.top-bar-name{font-family:'Oswald',sans-serif;font-size:14px;color:white;letter-spacing:.5px;}
+.top-bar-role{font-size:10px;color:#9CA3AF;}
+.top-bar-right{display:flex;align-items:center;gap:7px;}
+.icon-btn{width:30px;height:30px;border-radius:7px;border:1.5px solid rgba(255,255,255,.15);background:rgba(255,255,255,.08);color:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:background .15s;}
+.icon-btn:hover{background:rgba(255,255,255,.18);}
+
+/* SCOREBOARD */
+.scoreboard{background:var(--dark);padding:0 18px;border-top:1px solid rgba(255,255,255,.06);}
+.score-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;padding:10px 0 7px;}
+.team-block{display:flex;flex-direction:column;}
+.team-block.opp{align-items:flex-end;text-align:right;}
+.team-name{font-family:'Oswald',sans-serif;font-size:10px;letter-spacing:2px;color:#9CA3AF;text-transform:uppercase;margin-bottom:1px;}
+.team-score-num{font-family:'Oswald',sans-serif;font-size:46px;font-weight:700;line-height:1;}
+.team-score-num.family{color:#4ADE80;}
+.team-score-num.opp{color:#F87171;}
+.vs-col{display:flex;flex-direction:column;align-items:center;gap:3px;padding:0 14px;}
+.vs-label{font-family:'Oswald',sans-serif;color:var(--gold);font-size:12px;letter-spacing:2px;}
+.win-status{font-family:'Oswald',sans-serif;font-size:9px;letter-spacing:1px;padding:2px 8px;border-radius:20px;}
+.win-status.winning{background:rgba(74,222,128,.2);color:#4ADE80;}
+.win-status.losing{background:rgba(248,113,113,.2);color:#F87171;}
+.win-status.tied{background:rgba(232,162,0,.2);color:var(--gold);}
+.goal-dots{display:flex;gap:4px;margin-top:3px;flex-wrap:wrap;}
+.goal-dots.opp{justify-content:flex-end;}
+.goal-dot{width:11px;height:11px;border-radius:50%;border:1px solid;}
+.goal-dot.scored{background:#4ADE80;border-color:#4ADE80;}
+.goal-dot.empty{background:transparent;border-color:#374151;}
+.goal-dot.opp-scored{background:#F87171;border-color:#F87171;}
+.week-chip{font-family:'Oswald',sans-serif;font-size:10px;color:var(--gold);background:rgba(232,162,0,.15);padding:2px 9px;border-radius:20px;letter-spacing:1px;}
+
+/* NAV */
+.nav-tabs{display:flex;background:var(--dark);border-top:1px solid rgba(255,255,255,.07);}
+.nav-tab{flex:1;padding:9px 5px;background:none;border:none;color:#6B7280;font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:1px;text-transform:uppercase;cursor:pointer;transition:color .15s,border-bottom .15s;border-bottom:2px solid transparent;}
+.nav-tab.active{color:var(--gold);border-bottom-color:var(--gold);}
+.nav-tab:hover:not(.active){color:white;}
+
+/* CONTENT */
+.content{padding:14px;}
+.section-card{background:white;border-radius:var(--radius-lg);box-shadow:var(--shadow);margin-bottom:14px;overflow:hidden;}
+.section-header{display:flex;align-items:center;justify-content:space-between;padding:13px 16px;border-bottom:1px solid var(--gray-5);cursor:pointer;user-select:none;transition:background .15s;}
+.section-header:hover{background:var(--gray-6);}
+.section-header-left{display:flex;align-items:center;gap:9px;}
+.section-icon{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.section-title{font-family:'Oswald',sans-serif;font-size:15px;font-weight:600;letter-spacing:.3px;}
+.section-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.badge-green{background:var(--green-light);color:var(--green);}
+.badge-red{background:var(--red-light);color:var(--red);}
+.badge-gold{background:var(--gold-bg);color:#92610A;}
+.badge-blue{background:var(--blue-light);color:var(--blue);}
+.badge-orange{background:var(--orange-light);color:var(--orange);}
+.badge-gray{background:var(--gray-5);color:var(--gray-3);}
+.chevron{color:var(--gray-3);font-size:12px;transition:transform .2s;}
+.chevron.open{transform:rotate(180deg);}
+.section-body{padding:14px 16px;}
+.section-body.collapsed{display:none;}
+
+/* MEETING HEADLINES */
+.meeting-headline{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.headline-stat{background:white;border-radius:var(--radius);border:1.5px solid var(--gray-4);padding:12px 10px;text-align:center;}
+.headline-num{font-family:'Oswald',sans-serif;font-size:28px;font-weight:700;line-height:1;margin-bottom:3px;}
+.headline-label{font-size:10px;color:var(--gray-3);font-weight:500;letter-spacing:.5px;text-transform:uppercase;}
+.headline-num.green{color:var(--green);}
+.headline-num.red{color:var(--red);}
+.headline-num.gold{color:var(--gold);}
+
+/* IDS */
+.ids-row{display:flex;align-items:flex-start;gap:9px;padding:10px 0;border-bottom:1px solid var(--gray-5);}
+.ids-row:last-child{border-bottom:none;}
+.ids-type{font-size:9px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:2px 7px;border-radius:20px;flex-shrink:0;margin-top:2px;}
+.ids-i{background:#FEF9C3;color:#92400E;}
+.ids-d{background:var(--blue-light);color:var(--blue);}
+.ids-s{background:var(--red-light);color:var(--red);}
+.ids-o{background:var(--green-light);color:var(--green);}
+.ids-actions{display:flex;gap:3px;flex-shrink:0;}
+.ids-btn{width:24px;height:24px;border-radius:5px;border:1.5px solid var(--gray-4);background:white;font-size:12px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.ids-btn.solve:hover{background:var(--green-light);border-color:var(--green);}
+.ids-btn.drop:hover{background:var(--red-light);border-color:var(--red);}
+
+/* TASK ROWS */
+.task-group-label{font-size:10px;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;color:var(--gray-3);margin:12px 0 5px;}
+.task-group-label:first-child{margin-top:0;}
+.task-item{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid var(--gray-5);}
+.task-item:last-child{border-bottom:none;}
+.task-check{width:22px;height:22px;border-radius:6px;border:2px solid var(--gray-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s;cursor:pointer;}
+.task-check.done-check{background:var(--green);border-color:var(--green);}
+.task-check.pending-check{background:var(--orange-light);border-color:var(--orange);}
+.chk-icon{font-size:11px;color:white;display:none;}
+.task-check.done-check .chk-icon{display:block;}
+.task-check.pending-check .chk-icon{display:block;color:var(--orange);}
+.task-info{flex:1;}
+.task-name{font-size:13px;font-weight:500;}
+.task-name.done-name{text-decoration:line-through;color:var(--gray-3);}
+.task-meta{font-size:10px;color:var(--gray-3);margin-top:1px;}
+.task-due{font-size:10px;color:var(--orange);font-weight:600;margin-top:1px;}
+.task-due.overdue{color:var(--red);}
+.owner-pill{font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;flex-shrink:0;}
+.owner-jase{background:#EBF0FB;color:var(--blue);}
+.owner-jordy{background:#FEF3C7;color:#92610A;}
+.owner-jax{background:#FCE7F3;color:#9D174D;}
+.owner-dad{background:var(--gray-5);color:var(--gray-2);}
+.owner-mom{background:var(--purple-light);color:var(--purple);}
+.owner-family{background:#E0F2FE;color:#0369A1;}
+.status-pill{font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;flex-shrink:0;}
+.sp-pending{background:var(--orange-light);color:var(--orange);}
+.sp-approved{background:var(--green-light);color:var(--green);}
+.sp-todo{background:var(--gray-5);color:var(--gray-3);}
+.sp-quest{background:var(--purple-light);color:var(--purple);}
+
+/* APPROVALS */
+.approval-row{display:flex;align-items:flex-start;gap:10px;padding:11px 0;border-bottom:1px solid var(--gray-5);}
+.approval-row:last-child{border-bottom:none;}
+.approval-info{flex:1;}
+.approval-name{font-size:13px;font-weight:600;}
+.approval-meta{font-size:11px;color:var(--gray-3);margin-top:1px;}
+.approval-type{font-size:10px;font-weight:600;padding:1px 6px;border-radius:20px;flex-shrink:0;margin-top:2px;}
+.at-daily{background:#DCFCE7;color:var(--green);}
+.at-weekly{background:var(--blue-light);color:var(--blue);}
+.at-quest{background:var(--purple-light);color:var(--purple);}
+.approve-btn{padding:5px 12px;background:var(--green);border:none;border-radius:7px;color:white;font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;transition:opacity .15s;}
+.approve-btn:hover{opacity:.85;}
+.reject-btn{padding:5px 10px;background:var(--red-light);border:none;border-radius:7px;color:var(--red);font-size:12px;font-weight:600;cursor:pointer;flex-shrink:0;}
+
+/* PROJECTS */
+.progress-bar-wrap{background:var(--gray-5);border-radius:100px;height:5px;margin-bottom:5px;overflow:hidden;}
+.progress-bar-fill{height:100%;border-radius:100px;background:var(--purple);transition:width .6s cubic-bezier(.34,1.56,.64,1);}
+.milestone-list{display:flex;flex-direction:column;gap:3px;}
+.ms-item{display:flex;align-items:center;gap:8px;font-size:12px;padding:3px 0;border-bottom:1px solid var(--gray-5);}
+.ms-item:last-child{border-bottom:none;}
+.ms-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.ms-dot.done{background:var(--green);}
+.ms-dot.pending{background:var(--orange);}
+.ms-dot.upcoming{background:var(--gray-4);}
+.ms-text{flex:1;color:var(--gray-2);}
+.ms-text.done{text-decoration:line-through;color:var(--gray-3);}
+.ms-assignee{font-size:9px;font-weight:600;padding:1px 5px;border-radius:20px;flex-shrink:0;}
+.ms-due{font-size:9px;color:var(--orange);font-weight:600;flex-shrink:0;}
+.ms-due.overdue{color:var(--red);}
+.spell-warning{display:flex;align-items:center;gap:6px;background:var(--red-light);border:1px solid #FECACA;border-radius:7px;padding:6px 9px;margin-top:5px;font-size:11px;color:var(--red);font-weight:500;}
+.week-tag{font-size:9px;font-weight:600;padding:1px 6px;border-radius:20px;background:var(--gray-5);color:var(--gray-3);margin-left:5px;}
+.rock-row{display:flex;align-items:center;gap:9px;padding:9px 0;border-bottom:1px solid var(--gray-5);}
+.rock-row:last-child{border-bottom:none;}
+.rock-check{width:20px;height:20px;border-radius:50%;border:2px solid var(--gray-4);display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+.rock-check.done{background:var(--green);border-color:var(--green);}
+.rock-check.inprogress{border-color:var(--blue);}
+.rock-status{font-size:10px;font-weight:600;padding:2px 7px;border-radius:20px;flex-shrink:0;}
+.status-inprogress{background:var(--blue-light);color:var(--blue);}
+.status-notstarted{background:var(--gray-5);color:var(--gray-3);}
+.status-done{background:var(--green-light);color:var(--green);}
+
+/* HP ROLES */
+.hp-roles{display:grid;grid-template-columns:repeat(5,1fr);gap:7px;}
+.hp-role{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border-radius:var(--radius);border:1.5px solid var(--gray-4);text-align:center;}
+.hp-emoji{font-size:18px;}
+.hp-name{font-size:9px;font-weight:600;}
+.hp-role-name{font-size:8px;color:var(--gray-3);}
+
+/* SCORES */
+.player-row{display:flex;align-items:center;gap:9px;padding:9px;border:1.5px solid var(--gray-4);border-radius:var(--radius);margin-bottom:8px;}
+.player-row:last-child{margin-bottom:0;}
+.player-avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0;background:var(--gray-5);}
+.player-pts{font-family:'Oswald',sans-serif;font-size:24px;font-weight:700;}
+.pts-label{font-size:10px;color:var(--gray-3);}
+.pts-btn{width:24px;height:24px;border-radius:50%;border:1.5px solid var(--gray-4);background:white;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all .15s;}
+.pts-btn.plus:hover{border-color:var(--green);color:var(--green);}
+.pts-btn.minus:hover{border-color:var(--red);color:var(--red);}
+
+/* REWARD */
+.reward-card{background:linear-gradient(135deg,#1B3A5C,#2D1B69);border-radius:var(--radius-lg);padding:16px;color:white;margin-bottom:12px;display:flex;align-items:center;gap:12px;}
+.reward-icon{font-size:30px;}
+.reward-label{font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:rgba(255,255,255,.6);margin-bottom:2px;}
+.reward-title{font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;}
+.reward-sub{font-size:11px;color:rgba(255,255,255,.7);margin-top:1px;}
+
+/* DAY BUTTONS */
+.day-btn{padding:7px 2px;border-radius:8px;border:2px solid var(--gray-4);background:white;font-size:10px;font-weight:600;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:1px;transition:all .15s;color:var(--gray-3);}
+.day-btn.scored{background:var(--green);border-color:var(--green);color:white;}
+
+/* MISC */
+.game-tip{background:var(--dark);color:white;border-radius:var(--radius);padding:9px 11px;font-size:11px;margin-bottom:12px;display:flex;align-items:flex-start;gap:7px;line-height:1.5;}
+.game-tip strong{color:var(--gold);}
+.add-btn{display:flex;align-items:center;gap:6px;width:100%;padding:9px 12px;background:var(--gray-6);border:1.5px dashed var(--gray-4);border-radius:var(--radius);cursor:pointer;color:var(--gray-3);font-size:12px;font-weight:500;transition:all .15s;margin-top:7px;}
+.add-btn:hover{border-color:var(--dark);color:var(--dark);}
+.btn-primary{padding:10px 16px;background:var(--dark);color:white;border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;font-family:'Inter',sans-serif;transition:opacity .15s;}
+.btn-primary:hover{opacity:.85;}
+.btn-danger{padding:10px 16px;background:var(--red-light);color:var(--red);border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;}
+.btn-cancel{padding:10px 16px;background:var(--gray-5);color:var(--dark);border:none;border-radius:9px;font-size:13px;font-weight:600;cursor:pointer;}
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;z-index:200;padding:14px;}
+.modal-overlay.hidden{display:none;}
+.modal{background:white;border-radius:var(--radius-lg);padding:20px;width:100%;max-width:420px;box-shadow:0 20px 60px rgba(0,0,0,.3);max-height:90vh;overflow-y:auto;}
+.modal-title{font-family:'Oswald',sans-serif;font-size:18px;margin-bottom:12px;}
+.modal-input{width:100%;border:1.5px solid var(--gray-4);border-radius:7px;padding:8px 10px;font-size:13px;font-family:'Inter',sans-serif;outline:none;margin-bottom:8px;}
+.modal-input:focus{border-color:var(--blue);}
+.modal-select{width:100%;border:1.5px solid var(--gray-4);border-radius:7px;padding:8px 10px;font-size:13px;font-family:'Inter',sans-serif;outline:none;margin-bottom:8px;background:white;color:var(--dark);}
+.modal-label{font-size:10px;font-weight:600;letter-spacing:.5px;text-transform:uppercase;color:var(--gray-3);margin-bottom:4px;display:block;}
+.modal-actions{display:flex;gap:7px;margin-top:12px;flex-wrap:wrap;}
+.ms-edit-row{display:flex;align-items:center;gap:5px;margin-bottom:7px;padding:7px;background:var(--gray-6);border-radius:8px;}
+.ms-edit-row input[type=text]{flex:1;border:1.5px solid var(--gray-4);border-radius:6px;padding:5px 8px;font-size:12px;font-family:'Inter',sans-serif;outline:none;}
+.ms-edit-row input[type=text]:focus{border-color:var(--blue);}
+.ms-edit-row select{border:1.5px solid var(--gray-4);border-radius:6px;padding:5px 7px;font-size:12px;font-family:'Inter',sans-serif;outline:none;background:white;}
+.ms-rm{background:none;border:none;color:var(--gray-3);font-size:16px;cursor:pointer;padding:1px 4px;flex-shrink:0;}
+.ms-rm:hover{color:var(--red);}
+.assign-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--gray-5);}
+.assign-row:last-child{border-bottom:none;}
+.assign-sel{border:1.5px solid var(--gray-4);border-radius:6px;padding:4px 8px;font-size:11px;font-family:'Inter',sans-serif;color:var(--dark);background:white;cursor:pointer;outline:none;}
+.history-row{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--gray-5);}
+.history-row:last-child{border-bottom:none;}
+.ids-type-btns{display:flex;gap:5px;margin-bottom:9px;}
+.ids-type-btn{padding:4px 10px;border-radius:20px;border:1.5px solid var(--gray-4);font-size:11px;font-weight:600;cursor:pointer;background:white;transition:all .15s;}
+.ids-active-I{background:#FEF9C3;border-color:#D97706;color:#92400E;}
+.ids-active-D{background:var(--blue-light);border-color:var(--blue);color:var(--blue);}
+.ids-active-S{background:var(--red-light);border-color:var(--red);color:var(--red);}
+.ids-active-O{background:var(--green-light);border-color:var(--green);color:var(--green);}
+.empty-state{text-align:center;padding:24px 14px;color:var(--gray-3);font-size:12px;}
+.empty-emoji{font-size:26px;margin-bottom:5px;}
+.scorecard-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--gray-5);}
+.scorecard-row:last-child{border-bottom:none;}
+.scorecard-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.scorecard-dot.green{background:var(--green);}
+.scorecard-dot.red{background:var(--red);}
+.scorecard-dot.orange{background:var(--orange);}
+.notif-badge{background:var(--red);color:white;border-radius:50%;font-size:9px;font-weight:700;min-width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;padding:0 3px;margin-left:4px;}
+
+@media(max-width:480px){
+  .meeting-headline{grid-template-columns:repeat(2,1fr);}
+  .hp-roles{grid-template-columns:repeat(3,1fr);}
+  .team-score-num{font-size:36px;}
+  .login-grid{grid-template-columns:repeat(2,1fr);}
+}
+
+/* ANIMATIONS */
+@keyframes score-bump{0%{transform:scale(1)}30%{transform:scale(1.45)}55%{transform:scale(.88)}75%{transform:scale(1.15)}100%{transform:scale(1)}}
+.score-bump{animation:score-bump .55s cubic-bezier(.36,.07,.19,.97) forwards}
+@keyframes fg{0%{color:#4ADE80}40%{color:#fff;text-shadow:0 0 30px #4ADE80}100%{color:#4ADE80;text-shadow:none}}
+.flash-green{animation:fg .7s ease forwards}
+@keyframes fr{0%{color:#F87171}40%{color:#fff;text-shadow:0 0 30px #F87171}100%{color:#F87171;text-shadow:none}}
+.flash-red{animation:fr .7s ease forwards}
+.pts-float{position:fixed;font-family:'Oswald',sans-serif;font-size:19px;font-weight:700;pointer-events:none;z-index:9999;animation:pfu 1.4s ease-out forwards;}
+@keyframes pfu{0%{opacity:1;transform:translateY(0) scale(1)}20%{transform:translateY(-10px) scale(1.2)}100%{opacity:0;transform:translateY(-65px) scale(.7)}}
+#fx-overlay{position:fixed;inset:0;pointer-events:none;z-index:9000;display:flex;align-items:center;justify-content:center;}
+.fx-burst{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;}
+.fx-bg-green{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(74,222,128,.45) 0%,transparent 70%);animation:fbg .8s ease-out forwards;}
+.fx-bg-purple{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(147,51,234,.5) 0%,transparent 70%);animation:fbg 1s ease-out forwards;}
+.fx-bg-gold{position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(232,162,0,.4) 0%,transparent 70%);animation:fbg 2.5s ease-out forwards;}
+@keyframes fbg{0%{opacity:1;transform:scale(.5)}50%{opacity:.9;transform:scale(1.1)}100%{opacity:0;transform:scale(1.4)}}
+.fx-text-goal{font-family:'Oswald',sans-serif;font-size:clamp(46px,13vw,100px);font-weight:700;color:white;text-align:center;line-height:1;position:relative;z-index:2;animation:fgt 1.6s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes fgt{0%{opacity:0;transform:scale(.2) rotate(-15deg)}25%{opacity:1;transform:scale(1.15) rotate(3deg)}60%{transform:scale(1.05);opacity:1}100%{opacity:0;transform:scale(1.1) translateY(-18px)}}
+.fx-text-spell{font-family:'Oswald',sans-serif;font-size:clamp(30px,9vw,74px);font-weight:700;color:#C084FC;text-align:center;line-height:1;position:relative;z-index:2;text-shadow:0 0 40px rgba(192,132,252,.8);animation:fst 1.8s ease forwards;}
+@keyframes fst{0%{opacity:0;transform:scale(.4) skewX(-10deg)}20%{opacity:1;transform:scale(1.1) skewX(3deg)}70%{opacity:1}100%{opacity:0;transform:scale(.9) translateY(-26px)}}
+.fx-text-win{font-family:'Oswald',sans-serif;font-size:clamp(42px,12vw,96px);font-weight:700;color:var(--gold);text-align:center;line-height:1;position:relative;z-index:2;text-shadow:0 0 60px rgba(232,162,0,.7);animation:fwt 3s cubic-bezier(.34,1.56,.64,1) forwards;}
+@keyframes fwt{0%{opacity:0;transform:scale(.1) rotate(-20deg)}20%{opacity:1;transform:scale(1.2) rotate(5deg)}65%{opacity:1}100%{opacity:0;transform:scale(1.05) translateY(-18px)}}
+.fx-sub{font-family:'Oswald',sans-serif;text-align:center;letter-spacing:4px;text-transform:uppercase;position:relative;z-index:2;animation:fsub 1.6s ease forwards;}
+@keyframes fsub{0%{opacity:0;transform:translateY(22px)}30%{opacity:1;transform:translateY(-3px)}70%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+.fx-sub-goal{font-size:clamp(14px,4vw,28px);color:#4ADE80;margin-top:6px;}
+.fx-sub-spell{font-size:clamp(11px,3vw,20px);color:rgba(192,132,252,.9);margin-top:5px;animation-duration:1.8s;}
+.fx-sub-win{font-size:clamp(12px,3.5vw,24px);color:white;margin-top:7px;animation-duration:3s;}
+.lc{position:absolute;inset:0;overflow:hidden;pointer-events:none;}
+.lb{position:absolute;width:2px;top:0;bottom:0;background:linear-gradient(to bottom,transparent,#C084FC 20%,#E879F9 50%,#C084FC 80%,transparent);animation:lba 1.2s ease forwards;border-radius:2px;}
+@keyframes lba{0%{opacity:0;transform:scaleY(0);transform-origin:top}15%{opacity:1;transform:scaleY(1) skewX(-8deg)}100%{opacity:0}}
+@keyframes day-score{0%{transform:scale(1);box-shadow:0 0 0 0 rgba(74,222,128,.6)}30%{transform:scale(1.22);box-shadow:0 0 0 9px rgba(74,222,128,0)}100%{transform:scale(1)}}
+.day-score-anim{animation:day-score .5s ease forwards}
+@keyframes sbpg{0%,100%{background:var(--dark)}25%{background:rgba(74,222,128,.14)}50%{background:var(--dark)}}
+.sb-pulse-green{animation:sbpg .7s ease}
+@keyframes sbpr{0%,100%{background:var(--dark)}25%{background:rgba(248,113,113,.17)}}
+.sb-pulse-red{animation:sbpr .7s ease}
+@keyframes shk{0%,100%{transform:translateX(0)}10%{transform:translateX(-5px)}20%{transform:translateX(5px)}40%{transform:translateX(4px)}60%{transform:translateX(2px)}}
+.shake{animation:shk .5s ease forwards}
+.conf{position:fixed;width:8px;height:8px;top:-10px;pointer-events:none;z-index:9998;border-radius:2px;}
+@keyframes conf-fall{0%{top:-10px;transform:rotateZ(0)}100%{top:110vh;transform:rotateZ(720deg)}}
+</style>
+</head>
+<body>
+<div id="sync-bar"></div>
+<div id="sync-status"></div>
+<div id="fx-overlay"></div>
+
+<!-- LOGIN -->
+<div id="login-screen">
+  <div class="login-logo">Family OS</div>
+  <div class="login-sub">WHO'S PLAYING?</div>
+  <div class="login-grid" id="login-grid" style="display:none"></div>
+  <div class="login-loading" id="login-loading">
+    <span style="animation:spin 1s linear infinite;display:inline-block">&#9696;</span> Connecting...
+  </div>
+  <div class="login-pin-wrap" id="pin-wrap" style="display:none">
+    <div class="login-pin-label" id="pin-prompt">Enter PIN</div>
+    <div class="pin-dots" id="pin-dots">
+      <div class="pin-dot" id="pd0"></div><div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div><div class="pin-dot" id="pd3"></div>
+    </div>
+    <div class="pin-pad">
+      <button class="pin-key" onclick="pinKey('1')">1</button><button class="pin-key" onclick="pinKey('2')">2</button><button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button><button class="pin-key" onclick="pinKey('5')">5</button><button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button><button class="pin-key" onclick="pinKey('8')">8</button><button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('back')">&#9003;</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key" onclick="pinKey('clear')" style="font-size:11px">CLR</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+    <button class="back-btn" onclick="showLoginGrid()">&#8592; Back</button>
+  </div>
+</div>
+
+<!-- MAIN APP -->
+<div id="main-app" style="display:none">
+  <div class="app" id="app-inner">
+    <div class="top-bar">
+      <div class="top-bar-left">
+        <div class="top-bar-avatar" id="tb-avatar"></div>
+        <div><div class="top-bar-name" id="tb-name"></div><div class="top-bar-role" id="tb-role"></div></div>
+      </div>
+      <div class="top-bar-right">
+        <button class="icon-btn" id="btn-reward" onclick="openModal('reward')" title="Set reward">&#127942;</button>
+        <button class="icon-btn" onclick="logout()">&#128260;</button>
+      </div>
+    </div>
+    <div class="scoreboard" id="scoreboard">
+      <div class="score-row">
+        <div class="team-block">
+          <div class="team-name">Family</div>
+          <div class="team-score-num family" id="family-score">0</div>
+          <div class="goal-dots" id="family-dots"></div>
+        </div>
+        <div class="vs-col">
+          <div class="vs-label">VS</div>
+          <div class="win-status tied" id="win-status">TIED</div>
+          <div class="week-chip" id="week-label">Week 1</div>
+        </div>
+        <div class="team-block opp">
+          <div class="team-name">Opponent</div>
+          <div class="team-score-num opp" id="opp-score">0</div>
+          <div class="goal-dots opp" id="opp-dots"></div>
+        </div>
+      </div>
+    </div>
+    <div class="nav-tabs" id="nav-tabs"></div>
+    <div id="tab-content"></div>
+  </div>
+</div>
+
+<div class="modal-overlay hidden" id="modal-overlay" onclick="closeModalOutside(event)">
+  <div class="modal" id="modal-content"></div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getFirestore, doc, setDoc, onSnapshot, getDoc } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyAm3qJyIZKLRXFICq1T3JuzuMaFUg4rUy0",
+  authDomain: "family-os-92ede.firebaseapp.com",
+  projectId: "family-os-92ede",
+  storageBucket: "family-os-92ede.firebasestorage.app",
+  messagingSenderId: "627488139710",
+  appId: "1:627488139710:web:e3e1b9ead65f56a0c1b1ef"
+};
+
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+const DOC = doc(db, 'familyos', 'state');
+
+// ── DEFAULT STATE ──
+const DS = {
+  schemaVersion: 1,
+  weekNum: 1, oppScore: 3,
+  days: [false,false,false,false,false,false,false],
+  reward: {title:'Movie Night + Pizza', sub:'Win the week to unlock it!'},
+  dailyTasks: [
+    {id:1, name:'Bedroom Cleaned', owner:'jase',  status:'todo'},
+    {id:2, name:'Hygiene Done',    owner:'jase',  status:'todo'},
+    {id:3, name:'Garbage Taken Out', owner:'jase', status:'todo'},
+    {id:4, name:'Luna Fed and Taken Out', owner:'jordy', status:'todo'},
+    {id:5, name:'Bedroom Cleaned', owner:'jordy', status:'todo'},
+    {id:6, name:'Hygiene Done',    owner:'jordy', status:'todo'},
+    {id:7, name:'Recyclables Out', owner:'jax',   status:'todo'},
+    {id:8, name:'Cat Food and Water', owner:'jax', status:'todo'},
+  ],
+  weeklyTasks: [
+    {id:10, name:'Vacuum Living Room', owner:'jordy', status:'todo', assignedWeek:1},
+    {id:11, name:'Clean Bathrooms',    owner:'jax',   status:'todo', assignedWeek:1},
+    {id:12, name:'Mow Lawn',           owner:'jase',  status:'todo', assignedWeek:1},
+  ],
+  extraTasks: [
+    {id:20, name:'Deep Clean Kitchen',   owner:null, rate:10, status:'todo'},
+    {id:21, name:'Wash & Vacuum Car',    owner:null, rate:10, status:'todo'},
+    {id:22, name:'Organize Garage Wall', owner:null, rate:10, status:'todo'},
+  ],
+  projects: [
+    {id:1, name:'Garage Renovation', enemy:'Death Eater #1', status:'inprogress', weekStarted:1,
+     milestones:[
+       {id:101, text:'Clear all junk',   owner:'jase',  dueWeek:1, status:'approved', weekCompleted:1},
+       {id:102, text:'Paint the walls',  owner:'jordy', dueWeek:2, status:'todo',     weekCompleted:null},
+       {id:103, text:'Install shelving', owner:'jax',   dueWeek:3, status:'todo',     weekCompleted:null},
+       {id:104, text:'Organize tools',   owner:'jase',  dueWeek:4, status:'todo',     weekCompleted:null},
+       {id:105, text:'Final inspection', owner:null,    dueWeek:5, status:'todo',     weekCompleted:null},
+     ], spellWarning:false, notes:'', prize:'Family Pizza Night + $10 each'},
+    {id:2, name:'Backyard Garden', enemy:'Voldemort', status:'notstarted', weekStarted:1,
+     milestones:[
+       {id:201, text:'Buy soil & seeds', owner:null, dueWeek:2, status:'todo', weekCompleted:null},
+       {id:202, text:'Build raised beds',owner:null, dueWeek:3, status:'todo', weekCompleted:null},
+       {id:203, text:'Plant and water',  owner:null, dueWeek:4, status:'todo', weekCompleted:null},
+     ], spellWarning:false, notes:'', prize:'Backyard BBQ Party'},
+  ],
+  ids: [
+    {id:1, type:'I', text:'What should we do for spring break?', owner:'Family', resolved:false},
+    {id:2, type:'S', text:'Back porch needs a pressure wash',    owner:'Dad',    resolved:false},
+  ],
+  scores: {dad:0, mom:0, jase:0, jordy:0, jax:0},
+  weeklyHistory: [],
+  nextDailyId:9, nextWeeklyId:13, nextExtraId:23,
+  nextProjectId:3, nextMsId:300, nextIdsId:3,
+};
+
+// ── GLOBALS ──
+window.S = null;
+let _saveTimer = null;
+let _ignoreNext = false;
+
+// ── MIGRATE ──
+function migrate(data) {
+  // Ensure all fields exist — safe forward-compat
+  if(!data.schemaVersion) data.schemaVersion = 1;
+  if(!data.extraTasks) data.extraTasks = JSON.parse(JSON.stringify(DS.extraTasks));
+  if(!data.scores) data.scores = {dad:0,mom:0,jase:0,jordy:0,jax:0};
+  if(!data.ids) data.ids = [];
+  if(!data.weeklyHistory) data.weeklyHistory = [];
+  if(!data.reward) data.reward = JSON.parse(JSON.stringify(DS.reward));
+  data.dailyTasks && data.dailyTasks.forEach(t=>{ if(!t.status) t.status='todo'; });
+  data.weeklyTasks && data.weeklyTasks.forEach(t=>{ if(!t.status) t.status='todo'; if(!t.assignedWeek) t.assignedWeek=1; });
+  data.projects && data.projects.forEach(p=>{ if(!p.prize) p.prize=''; p.milestones && p.milestones.forEach(m=>{ if(!m.status) m.status='todo'; if(!m.id) m.id=Math.floor(Math.random()*9000)+1000; }); });
+  return data;
+}
+
+// ── SAVE to Firebase (debounced 800ms) ──
+window.save = function() {
+  showSyncing();
+  clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(async () => {
+    try {
+      _ignoreNext = true;
+      await setDoc(DOC, window.S);
+      showSynced();
+    } catch(e) {
+      console.error('Save failed', e);
+      showSyncError();
+    }
+  }, 800);
+};
+
+function showSyncing(){
+  const bar=document.getElementById('sync-bar'); bar.classList.add('syncing');
+  const st=document.getElementById('sync-status'); st.textContent='\u2601\uFE0F Saving...'; st.classList.add('show');
+}
+function showSynced(){
+  const bar=document.getElementById('sync-bar'); bar.classList.remove('syncing'); bar.style.opacity=0;
+  const st=document.getElementById('sync-status'); st.textContent='\u2705 Synced'; st.classList.add('show');
+  setTimeout(()=>st.classList.remove('show'),2000);
+}
+function showSyncError(){
+  const st=document.getElementById('sync-status'); st.textContent='\u26A0\uFE0F Sync error'; st.classList.add('show');
+  setTimeout(()=>st.classList.remove('show'),3000);
+}
+
+// ── INIT: load from Firebase, then listen for real-time updates ──
+async function init() {
+  try {
+    const snap = await getDoc(DOC);
+    if(snap.exists()) {
+      window.S = migrate(snap.data());
+    } else {
+      window.S = JSON.parse(JSON.stringify(DS));
+      await setDoc(DOC, window.S);
+    }
+  } catch(e) {
+    console.warn('Firebase load failed, using defaults', e);
+    window.S = JSON.parse(JSON.stringify(DS));
+  }
+
+  // Show login grid
+  document.getElementById('login-loading').style.display='none';
+  document.getElementById('login-grid').style.display='grid';
+  buildLoginGrid();
+
+  // Real-time listener — updates UI on any device change
+  onSnapshot(DOC, (snap) => {
+    if(_ignoreNext){ _ignoreNext=false; return; }
+    if(snap.exists()){
+      window.S = migrate(snap.data());
+      // If app is open, refresh current tab
+      if(window.CU && document.getElementById('main-app').style.display!=='none'){
+        renderScoreboard();
+        buildNav();
+        renderTab(window.activeTab);
+        showRemoteUpdate();
+      }
+    }
+  });
+}
+
+function showRemoteUpdate(){
+  const st=document.getElementById('sync-status'); st.textContent='\uD83D\uDD04 Updated!'; st.classList.add('show');
+  setTimeout(()=>st.classList.remove('show'),2000);
+}
+
+init();
+</script>
+
+<script>
+// ═══════════════════════════════════════
+// CONFIG (non-module)
+// ═══════════════════════════════════════
+const USERS = [
+  {id:'dad',  name:'Dad',   role:'Sirius Black',    emoji:'\u26A1', pin:'1234', type:'parent'},
+  {id:'mom',  name:'Mom',   role:'Lily Potter',     emoji:'\u2728', pin:'5678', type:'parent'},
+  {id:'jase', name:'Jase',  role:'Harry Potter',    emoji:'\uD83E\uDD81', pin:'1111', type:'kid'},
+  {id:'jordy',name:'Jordy', role:'Ron Weasley',     emoji:'\uD83D\uDD77\uFE0F', pin:'2222', type:'kid'},
+  {id:'jax',  name:'Jax',   role:'Seamus Finnigan', emoji:'\uD83D\uDD25', pin:'3333', type:'kid'},
+];
+const KIDS = ['jase','jordy','jax'];
+const DAYS_OF_WEEK = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+
+window.CU = null;
+window.activeTab = 'meeting';
+let pinBuf = '', pendingU = null;
+
+// ═══════════════════════════════════════
+// AUTH
+// ═══════════════════════════════════════
+function buildLoginGrid(){
+  const g=document.getElementById('login-grid'); g.innerHTML='';
+  USERS.forEach(u=>{
+    const b=document.createElement('button'); b.className='login-btn';
+    b.innerHTML=`<div class="login-avatar">${u.emoji}</div><div class="login-name">${u.name}</div><div class="login-role">${u.role}</div>`;
+    b.onclick=()=>startPin(u); g.appendChild(b);
+  });
+}
+function startPin(u){
+  pendingU=u; pinBuf='';
+  document.getElementById('login-grid').style.display='none';
+  document.getElementById('pin-wrap').style.display='block';
+  document.getElementById('pin-prompt').textContent=`${u.emoji} ${u.name}'s PIN`;
+  document.getElementById('pin-error').textContent=''; updatePinDots();
+}
+function showLoginGrid(){
+  document.getElementById('login-grid').style.display='grid';
+  document.getElementById('pin-wrap').style.display='none';
+  pinBuf=''; pendingU=null;
+}
+function pinKey(k){
+  if(k==='back') pinBuf=pinBuf.slice(0,-1);
+  else if(k==='clear') pinBuf='';
+  else if(pinBuf.length<4) pinBuf+=k;
+  updatePinDots();
+  if(pinBuf.length===4) setTimeout(checkPin,120);
+}
+function updatePinDots(){ for(let i=0;i<4;i++) document.getElementById('pd'+i).classList.toggle('filled',i<pinBuf.length); }
+function checkPin(){
+  if(pinBuf===pendingU.pin){ loginAs(pendingU); }
+  else{
+    document.getElementById('pin-error').textContent='Wrong PIN \u2014 try again';
+    pinBuf=''; updatePinDots();
+    setTimeout(()=>{ document.getElementById('pin-error').textContent=''; },1800);
+  }
+}
+function loginAs(u){
+  window.CU=u;
+  document.getElementById('login-screen').style.display='none';
+  document.getElementById('main-app').style.display='block';
+  document.getElementById('tb-avatar').textContent=u.emoji;
+  document.getElementById('tb-name').textContent=u.name;
+  document.getElementById('tb-role').textContent=u.role;
+  document.getElementById('btn-reward').style.display=u.type==='parent'?'flex':'none';
+  buildNav();
+  const startTab=u.type==='parent'?(u.id==='mom'?'approvals':'meeting'):'mytasks';
+  switchTab(startTab);
+}
+function logout(){
+  window.CU=null; pinBuf=''; pendingU=null;
+  document.getElementById('main-app').style.display='none';
+  document.getElementById('login-screen').style.display='flex';
+  showLoginGrid();
+}
+
+// ═══════════════════════════════════════
+// NAV
+// ═══════════════════════════════════════
+function buildNav(){
+  let tabs;
+  if(window.CU.id==='dad') tabs=[{id:'meeting',label:'\uD83D\uDCCB Meeting'},{id:'tasks',label:'\u2705 Tasks'},{id:'projects',label:'\u26A1 Quests'},{id:'scores',label:'\uD83C\uDFC5 Scores'}];
+  else if(window.CU.id==='mom') tabs=[{id:'approvals',label:'\u2705 Approvals'},{id:'projects',label:'\u26A1 Quests'},{id:'scores',label:'\uD83C\uDFC5 Scores'}];
+  else tabs=[{id:'mytasks',label:'\u2605 My Tasks'},{id:'projects',label:'\u26A1 Quests'},{id:'scores',label:'\uD83C\uDFC5 Scores'}];
+  const nav=document.getElementById('nav-tabs'); nav.innerHTML='';
+  tabs.forEach(t=>{
+    const b=document.createElement('button'); b.className='nav-tab'; b.dataset.tab=t.id;
+    if(t.id==='approvals'){const cnt=pendingCount();b.innerHTML=t.label+(cnt>0?` <span class="notif-badge">${cnt}</span>`:'');}
+    else b.textContent=t.label;
+    b.onclick=()=>switchTab(t.id); nav.appendChild(b);
+  });
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===window.activeTab));
+}
+function switchTab(tab){
+  window.activeTab=tab;
+  document.querySelectorAll('.nav-tab').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  renderTab(tab);
+}
+function renderTab(tab){
+  if(!window.S) return;
+  const el=document.getElementById('tab-content'); el.innerHTML='';
+  const wrap=document.createElement('div'); wrap.className='content';
+  if(tab==='meeting')   renderMeeting(wrap);
+  else if(tab==='tasks') renderTasksMgmt(wrap);
+  else if(tab==='approvals') renderApprovals(wrap);
+  else if(tab==='mytasks') renderMyTasks(wrap);
+  else if(tab==='projects') renderProjects(wrap);
+  else if(tab==='scores') renderScores(wrap);
+  el.appendChild(wrap); renderScoreboard();
+}
+
+// ═══════════════════════════════════════
+// HELPERS
+// ═══════════════════════════════════════
+function fsc(){ return window.S.days.filter(Boolean).length; }
+function wst(){ const f=fsc(),o=window.S.oppScore; return f>o?'winning':f<o?'losing':'tied'; }
+function uName(id){ const u=USERS.find(u=>u.id===id); return u?u.name:(id==='family'?'Family':id?id.charAt(0).toUpperCase()+id.slice(1):'?'); }
+function uEmoji(id){ const u=USERS.find(u=>u.id===id); return u?u.emoji:''; }
+function ownerClass(id){ return 'owner-'+(id||'family'); }
+function pendingCount(){
+  if(!window.S) return 0;
+  let n=0;
+  window.S.dailyTasks.forEach(t=>{ if(t.status==='pending_approval') n++; });
+  window.S.weeklyTasks.forEach(t=>{ if(t.status==='pending_approval') n++; });
+  window.S.projects.forEach(p=>p.milestones.forEach(m=>{ if(m.status==='pending_approval') n++; }));
+  return n;
+}
+function kidAllDoneForExtra(kid){
+  const myD=window.S.dailyTasks.filter(t=>t.owner===kid);
+  const myW=window.S.weeklyTasks.filter(t=>t.owner===kid);
+  return myD.every(t=>t.status==='approved')&&myW.every(t=>t.status==='approved');
+}
+function weekDue(w){ return w && w < window.S.weekNum; }
+function weekLabel(w){ if(!w) return ''; const d=w-window.S.weekNum; if(d<0) return `Wk ${w} (done)`; if(d===0) return `Due this week`; return `Due Wk ${w}`; }
+
+// ═══════════════════════════════════════
+// SCOREBOARD
+// ═══════════════════════════════════════
+function renderScoreboard(){
+  if(!window.S) return;
+  document.getElementById('family-score').textContent=fsc();
+  document.getElementById('opp-score').textContent=window.S.oppScore;
+  document.getElementById('week-label').textContent=`Week ${window.S.weekNum}`;
+  const w=wst(); const el=document.getElementById('win-status');
+  el.className=`win-status ${w}`; el.textContent=w==='winning'?'WINNING':w==='losing'?'LOSING':'TIED';
+  const fd=document.getElementById('family-dots'); fd.innerHTML='';
+  for(let i=0;i<7;i++){const d=document.createElement('div');d.className=`goal-dot ${window.S.days[i]?'scored':'empty'}`;fd.appendChild(d);}
+  const od=document.getElementById('opp-dots'); od.innerHTML='';
+  for(let i=0;i<Math.min(window.S.oppScore,7);i++){const d=document.createElement('div');d.className='goal-dot opp-scored';od.appendChild(d);}
+}
+
+// ═══════════════════════════════════════
+// MEETING TAB
+// ═══════════════════════════════════════
+function renderMeeting(wrap){
+  const rb=document.createElement('div'); rb.className='reward-card';
+  rb.innerHTML=`<div class="reward-icon">\uD83C\uDFC6</div><div><div class="reward-label">This Week's Prize</div><div class="reward-title">${window.S.reward.title}</div><div class="reward-sub">${window.S.reward.sub}</div></div>`;
+  wrap.appendChild(rb);
+  const dt=window.S.dailyTasks.filter(t=>t.status==='approved').length;
+  const tt=window.S.dailyTasks.length;
+  const wt=window.S.weeklyTasks.filter(t=>t.status==='approved').length;
+  const wtt=window.S.weeklyTasks.length;
+  const pc=pendingCount(); const f=fsc();
+  const hlCard=document.createElement('div'); hlCard.className='section-card'; hlCard.style.marginBottom='12px';
+  hlCard.innerHTML=`<div style="padding:12px"><div class="meeting-headline">
+    <div class="headline-stat"><div class="headline-num ${f>window.S.oppScore?'green':f<window.S.oppScore?'red':'gold'}">${f}\u2013${window.S.oppScore}</div><div class="headline-label">Score</div></div>
+    <div class="headline-stat"><div class="headline-num ${dt===tt?'green':'red'}">${dt}/${tt}</div><div class="headline-label">Daily Done</div></div>
+    <div class="headline-stat"><div class="headline-num ${wt===wtt?'green':wt>0?'gold':'red'}">${wt}/${wtt}</div><div class="headline-label">Weekly Done</div></div>
+    <div class="headline-stat"><div class="headline-num ${pc===0?'green':'gold'}">${pc}</div><div class="headline-label">Pending OK</div></div>
+  </div></div>`;
+  wrap.appendChild(hlCard);
+  addSection(wrap,'score-review','\u26BD','#DCFCE7','1 \u00B7 Weekly Score',buildScoreSection);
+  addSection(wrap,'scorecard','\uD83D\uDCCA','#EBF0FB','2 \u00B7 Scorecard',buildScorecardSection);
+  addSection(wrap,'rocks','\u26A1','#F3E8FF','3 \u00B7 Quest Rocks',buildRocksSection);
+  addSection(wrap,'ids','\uD83D\uDCA1','#FEF9C3','4 \u00B7 IDS',buildIDSSection);
+  addSection(wrap,'assign','\uD83D\uDCC5','#FEE2E2','5 \u00B7 Assign Weekly Tasks',buildAssignSection);
+}
+
+function addSection(wrap,id,icon,bg,title,builder){
+  const card=document.createElement('div'); card.className='section-card';
+  const hdr=document.createElement('div'); hdr.className='section-header';
+  hdr.innerHTML=`<div class="section-header-left"><div class="section-icon" style="background:${bg}">${icon}</div><div class="section-title">${title}</div></div><span class="chevron open" id="chev-${id}">\u25BE</span>`;
+  hdr.onclick=()=>{const b=document.getElementById('body-'+id);b.classList.toggle('collapsed');document.getElementById('chev-'+id).classList.toggle('open',!b.classList.contains('collapsed'));};
+  const body=document.createElement('div'); body.className='section-body'; body.id='body-'+id;
+  builder(body); card.appendChild(hdr); card.appendChild(body); wrap.appendChild(card);
+}
+
+function buildScoreSection(el){
+  el.innerHTML=`<div class="game-tip"><span style="flex-shrink:0">\u26BD</span><span>Every day all chores done = <strong>+1 Goal</strong>. Tap each day. Outscore opponent to win!</span></div>`;
+  const grid=document.createElement('div'); grid.style.cssText='display:grid;grid-template-columns:repeat(7,1fr);gap:5px;margin-bottom:12px;';
+  DAYS_OF_WEEK.forEach((d,i)=>{
+    const b=document.createElement('button'); b.className=`day-btn ${window.S.days[i]?'scored':''}`;
+    b.innerHTML=`<span style="font-size:12px">${window.S.days[i]?'\u26BD':'\u25CB'}</span><span>${d}</span>`;
+    b.onclick=()=>toggleDay(i,b); grid.appendChild(b);
+  });
+  el.appendChild(grid);
+  const oRow=document.createElement('div'); oRow.style.cssText='display:flex;align-items:center;gap:9px;';
+  oRow.innerHTML=`<span style="font-size:11px;color:var(--gray-3);font-weight:600">OPP GOALS:</span><button class="pts-btn minus" onclick="adjustOpp(-1)">\u2212</button><span id="opp-edit" style="font-family:'Oswald',sans-serif;font-size:22px;font-weight:700;min-width:26px;text-align:center">${window.S.oppScore}</span><button class="pts-btn plus" onclick="adjustOpp(1)">+</button>`;
+  el.appendChild(oRow);
+}
+
+function buildScorecardSection(el){
+  el.innerHTML='';
+  const lbl1=document.createElement('div');lbl1.className='task-group-label';lbl1.textContent='DAILY TASKS';el.appendChild(lbl1);
+  window.S.dailyTasks.forEach(t=>{
+    const row=document.createElement('div');row.className='scorecard-row';
+    const dc=t.status==='approved'?'green':t.status==='pending_approval'?'orange':'red';
+    row.innerHTML=`<div class="scorecard-dot ${dc}"></div><div style="flex:1;font-size:13px;font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--gray-3)">${uName(t.owner)}</div><span class="status-pill sp-${t.status==='approved'?'approved':t.status==='pending_approval'?'pending':'todo'}">${t.status==='approved'?'Done':t.status==='pending_approval'?'Needs OK':'To Do'}</span>`;
+    el.appendChild(row);
+  });
+  if(window.S.weeklyTasks.length){
+    const lbl2=document.createElement('div');lbl2.className='task-group-label';lbl2.textContent='WEEKLY TASKS';el.appendChild(lbl2);
+    window.S.weeklyTasks.forEach(t=>{
+      const row=document.createElement('div');row.className='scorecard-row';
+      const dc=t.status==='approved'?'green':t.status==='pending_approval'?'orange':'red';
+      row.innerHTML=`<div class="scorecard-dot ${dc}"></div><div style="flex:1;font-size:13px;font-weight:500">${t.name}</div><div style="font-size:11px;color:var(--gray-3)">${uName(t.owner)}</div><span class="status-pill sp-${t.status==='approved'?'approved':t.status==='pending_approval'?'pending':'todo'}">${t.status==='approved'?'Done':t.status==='pending_approval'?'Needs OK':'To Do'}</span>`;
+      el.appendChild(row);
+    });
+  }
+}
+
+function buildRocksSection(el){
+  el.innerHTML='';
+  if(!window.S.projects.length){el.innerHTML='<div class="empty-state"><div class="empty-emoji">\u26A1</div>No quests yet.</div>';return;}
+  const smap={inprogress:'In Progress',notstarted:'Not Started',done:'Complete'};
+  const scls={inprogress:'status-inprogress',notstarted:'status-notstarted',done:'status-done'};
+  window.S.projects.forEach(p=>{
+    const done=p.milestones.filter(m=>m.status==='approved').length, total=p.milestones.length;
+    const pct=total?Math.round(done/total*100):0;
+    const row=document.createElement('div');row.className='rock-row';
+    row.innerHTML=`<div class="rock-check ${p.status==='done'?'done':p.status==='inprogress'?'inprogress':''}" onclick="openModal('projectEdit',${p.id})" style="cursor:pointer">${p.status==='done'?'<span style="font-size:10px;color:white;font-weight:700">\u2713</span>':''}</div><div style="flex:1"><div style="font-size:13px;font-weight:500">${p.name} <span class="week-tag">Wk ${p.weekStarted}+</span>${p.spellWarning?' <span style="color:var(--red);font-size:11px">\u26A1</span>':''}</div><div style="font-size:11px;color:var(--gray-3)">vs ${p.enemy} \u00B7 ${pct}% \u00B7 ${done}/${total} milestones</div></div><div class="rock-status ${scls[p.status]}">${smap[p.status]}</div>`;
+    el.appendChild(row);
+  });
+  const ab=document.createElement('button');ab.className='add-btn';ab.textContent='+ Add Quest';ab.onclick=()=>openModal('project');el.appendChild(ab);
+}
+
+function buildIDSSection(el){
+  el.innerHTML='';
+  const open=window.S.ids.filter(i=>!i.resolved);
+  if(!open.length){el.innerHTML='<div class="empty-state"><div class="empty-emoji">\uD83D\uDCA1</div>No open issues. Solid week!</div>';}
+  const tcls={I:'ids-i',D:'ids-d',S:'ids-s',O:'ids-o'}, tlbl={I:'ISSUE',D:'DISCUSS',S:'SOLVE',O:'OPEN'};
+  open.forEach(item=>{
+    const row=document.createElement('div');row.className='ids-row';
+    row.innerHTML=`<div class="ids-type ${tcls[item.type]||'ids-i'}">${tlbl[item.type]||item.type}</div><div style="flex:1"><div style="font-size:13px;font-weight:500">${item.text}</div><div style="font-size:11px;color:var(--gray-3)">${item.owner}</div></div><div class="ids-actions"><button class="ids-btn solve" onclick="resolveIDS(${item.id})">\u2713</button><button class="ids-btn drop" onclick="dropIDS(${item.id})">\u00D7</button></div>`;
+    el.appendChild(row);
+  });
+  const ab=document.createElement('button');ab.className='add-btn';ab.textContent='+ Add Issue / Topic';ab.onclick=()=>openModal('ids');el.appendChild(ab);
+}
+
+function buildAssignSection(el){
+  el.innerHTML='';
+  const tip=document.createElement('div');tip.className='game-tip';
+  tip.innerHTML='<span style="flex-shrink:0">\uD83D\uDCCB</span><span>Daily tasks auto-repeat to the same kid. Assign <strong>weekly tasks</strong> below, then close the meeting.</span>';
+  el.appendChild(tip);
+  const dl=document.createElement('div');dl.className='task-group-label';dl.textContent='DAILY (AUTO-REPEAT)';el.appendChild(dl);
+  window.S.dailyTasks.forEach(t=>{
+    const row=document.createElement('div');row.className='assign-row';
+    row.innerHTML=`<div style="flex:1;font-size:12px;font-weight:500">${t.name}</div><div class="owner-pill ${ownerClass(t.owner)}">${uName(t.owner)}</div><span style="font-size:10px;color:var(--gray-3)">auto</span>`;
+    el.appendChild(row);
+  });
+  const wl=document.createElement('div');wl.className='task-group-label';wl.textContent='WEEKLY (ASSIGN EACH WEEK)';el.appendChild(wl);
+  window.S.weeklyTasks.forEach(t=>{
+    const row=document.createElement('div');row.className='assign-row';
+    const opts=KIDS.map(k=>`<option value="${k}" ${t.owner===k?'selected':''}>${uName(k)}</option>`).join('');
+    row.innerHTML=`<div style="flex:1;font-size:12px;font-weight:500">${t.name}</div><select class="assign-sel" onchange="changeWeeklyOwner(${t.id},this.value)">${opts}</select>`;
+    el.appendChild(row);
+  });
+  const ab=document.createElement('button');ab.className='add-btn';ab.textContent='+ Add Weekly Task';ab.onclick=()=>openModal('weeklyTask');el.appendChild(ab);
+  const cb=document.createElement('button');cb.className='btn-primary';cb.style.cssText='margin-top:14px;width:100%;';cb.textContent='\uD83C\uDFC1 Close Meeting & Start Next Week';cb.onclick=closeWeek;el.appendChild(cb);
+}
+
+// ═══════════════════════════════════════
+// TASKS MANAGEMENT (Dad)
+// ═══════════════════════════════════════
+function renderTasksMgmt(wrap){
+  // Daily
+  const dc=document.createElement('div');dc.className='section-card';
+  const dh=document.createElement('div');dh.className='section-header';
+  dh.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#DCFCE7">\u2600\uFE0F</div><div class="section-title">Daily Tasks</div></div><span style="font-size:11px;color:var(--gray-3)">Auto-repeat · Mom approves</span>';
+  const db=document.createElement('div');db.className='section-body';
+  const tip=document.createElement('div');tip.className='game-tip';
+  tip.innerHTML='<span>\uD83D\uDD04</span><span>Daily tasks <strong>auto-repeat</strong> every week to the same kid. Change the owner any time.</span>';
+  db.appendChild(tip);
+  window.S.dailyTasks.forEach(t=>db.appendChild(makeTaskRow(t,'daily')));
+  const adb=document.createElement('button');adb.className='add-btn';adb.textContent='+ Add Daily Task';adb.onclick=()=>openModal('dailyTask');db.appendChild(adb);
+  dc.appendChild(dh);dc.appendChild(db);wrap.appendChild(dc);
+  // Weekly
+  const wc=document.createElement('div');wc.className='section-card';
+  const wh=document.createElement('div');wh.className='section-header';
+  wh.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#EBF0FB">\uD83D\uDCC6</div><div class="section-title">Weekly Tasks</div></div><span style="font-size:11px;color:var(--gray-3)">Assigned each week · Mom approves</span>';
+  const wb=document.createElement('div');wb.className='section-body';
+  window.S.weeklyTasks.forEach(t=>wb.appendChild(makeTaskRow(t,'weekly')));
+  const awb=document.createElement('button');awb.className='add-btn';awb.textContent='+ Add Weekly Task';awb.onclick=()=>openModal('weeklyTask');wb.appendChild(awb);
+  wc.appendChild(wh);wc.appendChild(wb);wrap.appendChild(wc);
+  // Extra
+  const ec=document.createElement('div');ec.className='section-card';
+  const eh=document.createElement('div');eh.className='section-header';
+  eh.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#FEF9C3">\uD83D\uDCB0</div><div class="section-title">Extra Money Tasks</div></div>';
+  const eb=document.createElement('div');eb.className='section-body';
+  const etip=document.createElement('div');etip.className='game-tip';
+  etip.innerHTML='<span>\uD83D\uDCB0</span><span>Unlocked per kid once daily + weekly approved. Rate: <strong>$10/hr</strong>.</span>';
+  eb.appendChild(etip);
+  window.S.extraTasks.forEach(t=>eb.appendChild(makeTaskRow(t,'extra')));
+  const aeb=document.createElement('button');aeb.className='add-btn';aeb.textContent='+ Add Extra Task';aeb.onclick=()=>openModal('extraTask');eb.appendChild(aeb);
+  ec.appendChild(eh);ec.appendChild(eb);wrap.appendChild(ec);
+}
+
+function makeTaskRow(t,type){
+  const row=document.createElement('div');row.className='task-item';
+  const sl=t.status==='approved'?'Done':t.status==='pending_approval'?'Needs OK':'To Do';
+  const sc=t.status==='approved'?'sp-approved':t.status==='pending_approval'?'sp-pending':'sp-todo';
+  row.innerHTML=`<div style="flex:1"><div class="task-name">${t.name}</div><div class="task-meta">${type==='extra'?`$${t.rate||10}/hr`:(type==='daily'?'daily \u00B7 mom approves':'weekly \u00B7 mom approves')}</div></div>${t.owner?`<div class="owner-pill ${ownerClass(t.owner)}">${uName(t.owner)}</div>`:''}<span class="status-pill ${sc}">${sl}</span>`;
+  const edit=document.createElement('button');edit.style.cssText='background:none;border:none;color:var(--gray-3);cursor:pointer;font-size:14px;padding:1px 4px;flex-shrink:0;';edit.textContent='\u270E';
+  edit.onclick=e=>{e.stopPropagation();openModal('editTask',{id:t.id,type});};row.appendChild(edit);
+  const del=document.createElement('button');del.style.cssText='background:none;border:none;color:var(--gray-3);cursor:pointer;font-size:16px;padding:1px 4px;flex-shrink:0;';del.textContent='\u00D7';
+  del.onclick=e=>{e.stopPropagation();deleteTask(t.id,type);};row.appendChild(del);
+  return row;
+}
+function deleteTask(id,type){
+  if(type==='daily') window.S.dailyTasks=window.S.dailyTasks.filter(t=>t.id!==id);
+  else if(type==='weekly') window.S.weeklyTasks=window.S.weeklyTasks.filter(t=>t.id!==id);
+  else window.S.extraTasks=window.S.extraTasks.filter(t=>t.id!==id);
+  save(); renderTab(window.activeTab);
+}
+
+// ═══════════════════════════════════════
+// APPROVALS (Mom)
+// ═══════════════════════════════════════
+function renderApprovals(wrap){
+  const pending=[];
+  window.S.dailyTasks.forEach(t=>{if(t.status==='pending_approval') pending.push({...t,_type:'daily'});});
+  window.S.weeklyTasks.forEach(t=>{if(t.status==='pending_approval') pending.push({...t,_type:'weekly'});});
+  window.S.projects.forEach(p=>p.milestones.forEach(m=>{if(m.status==='pending_approval') pending.push({...m,_type:'quest',_projName:p.name,_projId:p.id});}));
+  const card=document.createElement('div');card.className='section-card';
+  const hdr=document.createElement('div');hdr.className='section-header';
+  hdr.innerHTML=`<div class="section-header-left"><div class="section-icon" style="background:#DCFCE7">\u2705</div><div class="section-title">Pending Approvals</div></div><span class="section-badge ${pending.length>0?'badge-orange':'badge-green'}">${pending.length} waiting</span>`;
+  const body=document.createElement('div');body.className='section-body';
+  if(!pending.length){body.innerHTML='<div class="empty-state"><div class="empty-emoji">\uD83C\uDF89</div>All caught up! Nothing waiting.</div>';}
+  else {
+    pending.forEach(item=>{
+      const row=document.createElement('div');row.className='approval-row';
+      const tcls=item._type==='daily'?'at-daily':item._type==='weekly'?'at-weekly':'at-quest';
+      const tlbl=item._type==='daily'?'Daily':item._type==='weekly'?'Weekly':'Quest';
+      const desc=item._type==='quest'?`${item._projName} \u00B7 ${uName(item.owner)}`:uName(item.owner);
+      row.innerHTML=`<span class="approval-type ${tcls}">${tlbl}</span><div class="approval-info"><div class="approval-name">${item.name||item.text}</div><div class="approval-meta">${desc}</div></div><button class="reject-btn" onclick="rejectItem(${item.id},'${item._type}',${item._projId||'null'})">Send Back</button><button class="approve-btn" onclick="approveItem(${item.id},'${item._type}',${item._projId||'null'})">Approve \u2713</button>`;
+      body.appendChild(row);
+    });
+  }
+  card.appendChild(hdr);card.appendChild(body);wrap.appendChild(card);
+  // Approved summary
+  const approved=[...window.S.dailyTasks.filter(t=>t.status==='approved').map(t=>({...t,type:'daily'})),...window.S.weeklyTasks.filter(t=>t.status==='approved').map(t=>({...t,type:'weekly'}))];
+  if(approved.length){
+    const ac=document.createElement('div');ac.className='section-card';
+    const ah=document.createElement('div');ah.className='section-header';ah.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#DCFCE7">\uD83C\uDFC5</div><div class="section-title">Approved This Week</div></div>';
+    const ab2=document.createElement('div');ab2.className='section-body';
+    approved.forEach(item=>{const r=document.createElement('div');r.style.cssText='display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid var(--gray-5);font-size:12px;';r.innerHTML=`<span style="font-size:14px">\u2705</span><span style="flex:1;font-weight:500">${item.name}</span><span class="owner-pill ${ownerClass(item.owner)}">${uName(item.owner)}</span>`;ab2.appendChild(r);});
+    ac.appendChild(ah);ac.appendChild(ab2);wrap.appendChild(ac);
+  }
+}
+
+function approveItem(id,type,projId){
+  if(type==='daily'){const t=window.S.dailyTasks.find(t=>t.id===id);if(t){t.status='approved';window.S.scores[t.owner]=(window.S.scores[t.owner]||0)+10;spawnPtsFloat(window.innerWidth/2,200,'+10 pts','#E8A200');}}
+  else if(type==='weekly'){const t=window.S.weeklyTasks.find(t=>t.id===id);if(t){t.status='approved';window.S.scores[t.owner]=(window.S.scores[t.owner]||0)+20;spawnPtsFloat(window.innerWidth/2,200,'+20 pts','#E8A200');}}
+  else if(type==='quest'){const p=window.S.projects.find(p=>p.id===projId);if(p){const m=p.milestones.find(m=>m.id===id);if(m){m.status='approved';m.weekCompleted=window.S.weekNum;if(m.owner)window.S.scores[m.owner]=(window.S.scores[m.owner]||0)+30;spawnPtsFloat(window.innerWidth/2,200,'+30 pts','#C084FC');if(p.milestones.every(ms=>ms.status==='approved')){p.status='done';setTimeout(()=>showQuestFX(p.name),300);}else if(p.milestones.some(ms=>ms.status==='approved'))p.status='inprogress';}}}
+  save(); buildNav(); renderTab(window.activeTab);
+}
+function rejectItem(id,type,projId){
+  if(type==='daily'){const t=window.S.dailyTasks.find(t=>t.id===id);if(t)t.status='todo';}
+  else if(type==='weekly'){const t=window.S.weeklyTasks.find(t=>t.id===id);if(t)t.status='todo';}
+  else if(type==='quest'){const p=window.S.projects.find(p=>p.id===projId);if(p){const m=p.milestones.find(m=>m.id===id);if(m)m.status='todo';}}
+  save(); buildNav(); renderTab(window.activeTab);
+}
+
+// ═══════════════════════════════════════
+// MY TASKS (Kids)
+// ═══════════════════════════════════════
+function renderMyTasks(wrap){
+  const kid=window.CU.id;
+  const rb=document.createElement('div');rb.className='reward-card';
+  rb.innerHTML=`<div class="reward-icon">\uD83C\uDFC6</div><div><div class="reward-label">This Week's Prize</div><div class="reward-title">${window.S.reward.title}</div><div class="reward-sub">${window.S.reward.sub}</div></div>`;
+  wrap.appendChild(rb);
+  const myD=window.S.dailyTasks.filter(t=>t.owner===kid);
+  const myW=window.S.weeklyTasks.filter(t=>t.owner===kid);
+  const myQ=[];
+  window.S.projects.forEach(p=>p.milestones.forEach(m=>{if(m.owner===kid&&m.status!=='approved') myQ.push({...m,_projName:p.name,_projId:p.id});}));
+  const allDone=kidAllDoneForExtra(kid);
+  const myE=allDone?window.S.extraTasks.filter(t=>t.status!=='approved'):[];
+  const doneReg=myD.filter(t=>t.status==='approved').length+myW.filter(t=>t.status==='approved').length;
+  const totalReg=myD.length+myW.length;
+  const card=document.createElement('div');card.className='section-card';
+  const hdr=document.createElement('div');hdr.className='section-header';
+  hdr.innerHTML=`<div class="section-header-left"><div class="section-icon" style="background:#DCFCE7">${window.CU.emoji}</div><div class="section-title">My Tasks</div></div><span class="section-badge badge-${doneReg===totalReg&&totalReg>0?'green':'blue'}">${doneReg}/${totalReg} done</span>`;
+  const body=document.createElement('div');body.className='section-body';
+  if(myD.length){const lbl=document.createElement('div');lbl.className='task-group-label';lbl.textContent='\u2600\uFE0F DAILY \u2014 Mom Approves';body.appendChild(lbl);myD.forEach(t=>body.appendChild(makeKidTaskItem(t,'daily')));}
+  if(myW.length){const lbl=document.createElement('div');lbl.className='task-group-label';lbl.textContent='\uD83D\uDCC6 WEEKLY \u2014 Mom Approves';body.appendChild(lbl);myW.forEach(t=>body.appendChild(makeKidTaskItem(t,'weekly')));}
+  if(myQ.length){const lbl=document.createElement('div');lbl.className='task-group-label';lbl.textContent='\u26A1 QUEST TASKS \u2014 Dad Approves';body.appendChild(lbl);myQ.forEach(m=>body.appendChild(makeKidQuestItem(m)));}
+  if(allDone&&myE.length){const lbl=document.createElement('div');lbl.className='task-group-label';lbl.style.color='var(--gold)';lbl.textContent='\uD83D\uDCB0 EXTRA TASKS \u2014 UNLOCKED!';body.appendChild(lbl);myE.forEach(t=>body.appendChild(makeKidExtraItem(t,kid)));}
+  else if(!allDone){const hint=document.createElement('div');hint.style.cssText='font-size:11px;color:var(--gray-3);padding:10px 0;display:flex;align-items:center;gap:6px;border-top:1px solid var(--gray-5);margin-top:8px;';hint.innerHTML=`\uD83D\uDD12 Finish all tasks to unlock <strong style="color:var(--gold)">\uD83D\uDCB0 Extra Money Tasks</strong>`;body.appendChild(hint);}
+  card.appendChild(hdr);card.appendChild(body);wrap.appendChild(card);
+  const pts=window.S.scores[kid]||0;
+  const sc=document.createElement('div');sc.className='section-card';
+  sc.innerHTML=`<div style="padding:14px;display:flex;align-items:center;gap:12px"><div style="font-size:26px">${window.CU.emoji}</div><div style="flex:1"><div style="font-size:11px;color:var(--gray-3);font-weight:600;letter-spacing:.5px;text-transform:uppercase">My Points</div><div style="font-family:'Oswald',sans-serif;font-size:34px;font-weight:700;color:var(--gold)">${pts}</div></div><div style="font-size:18px">\uD83C\uDFC5</div></div>`;
+  wrap.appendChild(sc);
+}
+
+function makeKidTaskItem(t,type){
+  const div=document.createElement('div');div.className='task-item';
+  const isDone=t.status==='approved',isPend=t.status==='pending_approval';
+  div.innerHTML=`<div class="task-check ${isDone?'done-check':isPend?'pending-check':''}">${isDone?'<span class="chk-icon" style="display:block">\u2713</span>':isPend?'<span class="chk-icon" style="display:block">\u231B</span>':''}</div><div class="task-info"><div class="task-name ${isDone?'done-name':''}">${t.name}</div><div class="task-meta">${type} \u00B7 ${isDone?'approved \u2713':isPend?'waiting for mom \u231B':'tap when done'}</div></div>`;
+  if(t.status==='todo'){div.style.cursor='pointer';div.onclick=e=>{if(e.target.tagName==='BUTTON')return;submitForApproval(t.id,type,e);};}
+  return div;
+}
+function makeKidQuestItem(m){
+  const div=document.createElement('div');div.className='task-item';
+  const isDone=m.status==='approved',isPend=m.status==='pending_approval';
+  const overdue=weekDue(m.dueWeek)&&!isDone&&!isPend;
+  div.innerHTML=`<div class="task-check ${isDone?'done-check':isPend?'pending-check':''}">${isDone?'<span class="chk-icon" style="display:block">\u2713</span>':isPend?'<span class="chk-icon" style="display:block">\u231B</span>':''}</div><div class="task-info"><div class="task-name ${isDone?'done-name':''}">${m.text}</div><div class="task-meta">Quest: ${m._projName}</div>${m.dueWeek?`<div class="task-due ${overdue?'overdue':''}">${overdue?'\u26A0\uFE0F OVERDUE \u2014 '+weekLabel(m.dueWeek):weekLabel(m.dueWeek)}</div>`:''}</div><span class="status-pill sp-quest">Quest</span>`;
+  if(m.status==='todo'){div.style.cursor='pointer';div.onclick=e=>submitMsForApproval(m.id,m._projId,e);}
+  return div;
+}
+function makeKidExtraItem(t,kid){
+  const div=document.createElement('div');div.className='task-item';
+  div.innerHTML=`<div class="task-check" style="cursor:pointer">${t.owner===kid?'<span class="chk-icon" style="display:block">\uD83D\uDCB0</span>':''}</div><div class="task-info"><div class="task-name">${t.name}</div><div class="task-meta">$${t.rate||10}/hr \u00B7 no approval needed</div></div>${t.owner?`<div class="owner-pill ${ownerClass(t.owner)}">${uName(t.owner)}</div>`:'<span style="font-size:10px;color:var(--green);font-weight:600">Available</span>'}`;
+  if(!t.owner){div.style.cursor='pointer';div.onclick=e=>{t.owner=kid;t.status='approved';window.S.scores[kid]=(window.S.scores[kid]||0)+(t.rate||10)*10;spawnPtsFloat(e.clientX,e.clientY,`+${(t.rate||10)*10}pts`,'#E8A200');save();renderTab(window.activeTab);};}
+  return div;
+}
+function submitForApproval(id,type,e){
+  if(type==='daily'){const t=window.S.dailyTasks.find(t=>t.id===id);if(t)t.status='pending_approval';}
+  else if(type==='weekly'){const t=window.S.weeklyTasks.find(t=>t.id===id);if(t)t.status='pending_approval';}
+  if(e)spawnPtsFloat(e.clientX,e.clientY,'Sent to Mom!','#6B21A8');
+  save(); buildNav(); renderTab(window.activeTab);
+}
+function submitMsForApproval(msId,projId,e){
+  const p=window.S.projects.find(p=>p.id===projId);if(!p)return;
+  const m=p.milestones.find(m=>m.id===msId);if(!m)return;
+  m.status='pending_approval';
+  if(e)spawnPtsFloat(e.clientX,e.clientY,'Sent to Dad!','#6B21A8');
+  save(); buildNav(); renderTab(window.activeTab);
+}
+
+// ═══════════════════════════════════════
+// PROJECTS
+// ═══════════════════════════════════════
+function renderProjects(wrap){
+  const rc=document.createElement('div');rc.className='section-card';
+  const rh=document.createElement('div');rh.className='section-header';
+  rh.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#F3E8FF">\uD83E\uDDD9</div><div class="section-title">Order of the Phoenix</div></div><span class="chevron open" id="chev-hp">\u25BE</span>';
+  rh.onclick=()=>{document.getElementById('body-hp').classList.toggle('collapsed');document.getElementById('chev-hp').classList.toggle('open');};
+  const rb=document.createElement('div');rb.className='section-body';rb.id='body-hp';
+  rb.innerHTML=`<div class="hp-roles">${USERS.map(u=>`<div class="hp-role"><div class="hp-emoji">${u.emoji}</div><div class="hp-name">${u.name}</div><div class="hp-role-name">${u.role}</div></div>`).join('')}</div>`;
+  rc.appendChild(rh);rc.appendChild(rb);wrap.appendChild(rc);
+  if(!window.S.projects.length){const e=document.createElement('div');e.className='empty-state';e.innerHTML='<div class="empty-emoji">\u26A1</div>No quests yet.';wrap.appendChild(e);}
+  window.S.projects.forEach(p=>wrap.appendChild(makeProjCard(p)));
+  if(window.CU.id==='dad'){const ab=document.createElement('button');ab.className='add-btn';ab.textContent='+ Add New Quest';ab.onclick=()=>openModal('project');wrap.appendChild(ab);}
+}
+
+function makeProjCard(p){
+  const card=document.createElement('div');card.className='section-card';
+  const done=p.milestones.filter(m=>m.status==='approved').length,total=p.milestones.length;
+  const pct=total?Math.round(done/total*100):0;
+  const smap={inprogress:'In Progress',notstarted:'Not Started',done:'Complete'};
+  const scls={inprogress:'status-inprogress',notstarted:'status-notstarted',done:'status-done'};
+  const hdr=document.createElement('div');hdr.className='section-header';
+  hdr.innerHTML=`<div class="section-header-left"><div class="section-icon" style="background:#F3E8FF">\u26A1</div><div><div class="section-title">${p.name}</div><div style="font-size:10px;color:var(--gray-3);margin-top:1px">vs ${p.enemy} \u00B7 Week ${p.weekStarted}+ \u00B7 ${pct}% done</div></div></div><div style="display:flex;align-items:center;gap:7px"><span class="section-badge ${scls[p.status]}">${smap[p.status]}</span><span class="chevron open" id="chev-p${p.id}">\u25BE</span></div>`;
+  hdr.onclick=()=>{
+    if(window.CU.id==='dad'){openModal('projectEdit',p.id);return;}
+    const b=document.getElementById('body-p'+p.id);b.classList.toggle('collapsed');document.getElementById('chev-p'+p.id).classList.toggle('open',!b.classList.contains('collapsed'));
+  };
+  const body=document.createElement('div');body.className='section-body';body.id='body-p'+p.id;
+  const bw=document.createElement('div');bw.className='progress-bar-wrap';
+  const bf=document.createElement('div');bf.className='progress-bar-fill';bf.style.width=pct+'%';
+  bw.appendChild(bf);body.appendChild(bw);
+  const ml=document.createElement('div');ml.className='milestone-list';
+  p.milestones.forEach(m=>{
+    const isDone=m.status==='approved',isPend=m.status==='pending_approval';
+    const overdue=weekDue(m.dueWeek)&&!isDone&&!isPend;
+    const d=document.createElement('div');d.className='ms-item';
+    const dotCls=isDone?'done':isPend?'pending':'upcoming';
+    const ownerBit=m.owner?`<span class="ms-assignee ${ownerClass(m.owner)}">${uEmoji(m.owner)}</span>`:'<span style="font-size:10px;color:var(--gray-3)">Unassigned</span>';
+    const dueBit=m.dueWeek?`<span class="ms-due ${overdue?'overdue':''}">${overdue?'\u26A0\uFE0F Wk '+m.dueWeek:'Wk '+m.dueWeek}</span>`:'';
+    const statusBit=isDone?`<span style="font-size:9px;color:var(--green)">\u2713 Wk ${m.weekCompleted||''}</span>`:isPend?`<span style="font-size:9px;color:var(--orange)">\u231B pending</span>`:'';
+    d.innerHTML=`<div class="ms-dot ${dotCls}"></div><span class="ms-text ${isDone?'done':''}">${m.text||''}</span>${ownerBit}${dueBit}${statusBit}`;
+    ml.appendChild(d);
+  });
+  body.appendChild(ml);
+  if(p.spellWarning)body.innerHTML+='<div class="spell-warning">\u26A1 Enemy casts a spell! Milestone overdue \u2014 fight back!</div>';
+  if(p.prize)body.innerHTML+=`<div style="margin-top:8px;background:var(--gold-bg);border:1.5px solid var(--gold);border-radius:8px;padding:7px 10px;font-size:12px;font-weight:600;color:#92610A">\uD83C\uDFC6 Quest Prize: ${p.prize}</div>`;
+  if(p.notes)body.innerHTML+=`<div style="margin-top:7px;font-size:11px;color:var(--gray-3);font-style:italic">${p.notes}</div>`;
+  card.appendChild(hdr);card.appendChild(body);return card;
+}
+
+// ═══════════════════════════════════════
+// SCORES
+// ═══════════════════════════════════════
+function renderScores(wrap){
+  const card=document.createElement('div');card.className='section-card';
+  const hdr=document.createElement('div');hdr.className='section-header';hdr.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#FEF9C3">\uD83C\uDFC5</div><div class="section-title">Individual Scores</div></div>';
+  const body=document.createElement('div');body.className='section-body';
+  USERS.forEach(u=>{
+    const pts=window.S.scores[u.id]||0,canEdit=window.CU.id==='dad';
+    const row=document.createElement('div');row.className='player-row';
+    row.innerHTML=`<div class="player-avatar">${u.emoji}</div><div style="flex:1"><div style="font-size:13px;font-weight:600">${u.name}</div><div style="font-size:10px;color:var(--gray-3)">${u.role}</div></div><div style="display:flex;align-items:center;gap:5px">${canEdit?`<button class="pts-btn minus" onclick="adjScore('${u.id}',-10,event)">\u2212</button>`:''}<div style="text-align:center;min-width:42px"><div class="player-pts" id="pts-${u.id}">${pts}</div><div class="pts-label">pts</div></div>${canEdit?`<button class="pts-btn plus" onclick="adjScore('${u.id}',10,event)">+</button>`:''}</div>`;
+    body.appendChild(row);
+  });
+  card.appendChild(hdr);card.appendChild(body);wrap.appendChild(card);
+  const hc=document.createElement('div');hc.className='section-card';
+  const hh=document.createElement('div');hh.className='section-header';hh.innerHTML='<div class="section-header-left"><div class="section-icon" style="background:#DCFCE7">\uD83D\uDCCA</div><div class="section-title">Weekly History</div></div>';
+  const hb=document.createElement('div');hb.className='section-body';
+  if(!window.S.weeklyHistory.length){hb.innerHTML='<div class="empty-state"><div class="empty-emoji">\uD83D\uDCCA</div>No completed weeks yet.</div>';}
+  else{[...window.S.weeklyHistory].reverse().forEach(h=>{const r=document.createElement('div');r.className='history-row';r.innerHTML=`<div style="font-weight:600;font-size:13px">Week ${h.week}</div><div style="display:flex;align-items:center;gap:7px"><span style="font-family:'Oswald',sans-serif;font-size:17px;font-weight:700">${h.family}\u2013${h.opp}</span><span class="section-badge ${h.family>h.opp?'badge-green':h.family<h.opp?'badge-red':'badge-gold'}">${h.family>h.opp?'W':h.family<h.opp?'L':'D'}</span></div>`;hb.appendChild(r);});}
+  hc.appendChild(hh);hc.appendChild(hb);wrap.appendChild(hc);
+}
+
+// ═══════════════════════════════════════
+// INTERACTIONS
+// ═══════════════════════════════════════
+function toggleDay(i,btn){
+  const was=window.S.days[i];window.S.days[i]=!window.S.days[i];
+  if(!was){
+    btn.classList.remove('day-score-anim');void btn.offsetWidth;btn.classList.add('day-score-anim');
+    setTimeout(showGoalFX,80);
+    setTimeout(()=>{const el=document.getElementById('family-score');el.classList.remove('score-bump','flash-green');void el.offsetWidth;el.classList.add('score-bump','flash-green');const sb=document.getElementById('scoreboard');sb.classList.remove('sb-pulse-green');void sb.offsetWidth;sb.classList.add('sb-pulse-green');},200);
+    spawnConf(28,'goal');const r=btn.getBoundingClientRect();spawnSparks(r.left+r.width/2,r.top+r.height/2,10,'#4ADE80');
+  }
+  save();renderTab(window.activeTab);
+}
+function adjustOpp(n){
+  const prev=window.S.oppScore;window.S.oppScore=Math.max(0,Math.min(7,window.S.oppScore+n));
+  if(window.S.oppScore>prev){const el=document.getElementById('opp-score');el.classList.remove('score-bump','flash-red');void el.offsetWidth;el.classList.add('score-bump','flash-red');const sb=document.getElementById('scoreboard');sb.classList.remove('sb-pulse-red');void sb.offsetWidth;sb.classList.add('sb-pulse-red');const ai=document.getElementById('app-inner');ai.classList.remove('shake');void ai.offsetWidth;ai.classList.add('shake');}
+  save();renderTab(window.activeTab);
+}
+function adjScore(uid,n,e){window.S.scores[uid]=Math.max(0,(window.S.scores[uid]||0)+n);if(n>0&&e)spawnPtsFloat(e.clientX,e.clientY,`+${n}`,'#E8A200');save();renderTab(window.activeTab);}
+function changeWeeklyOwner(id,owner){const t=window.S.weeklyTasks.find(t=>t.id===id);if(t){t.owner=owner;save();}}
+function resolveIDS(id){const i=window.S.ids.find(i=>i.id===id);if(i){i.resolved=true;save();renderTab(window.activeTab);}}
+function dropIDS(id){window.S.ids=window.S.ids.filter(i=>i.id!==id);save();renderTab(window.activeTab);}
+function closeWeek(){
+  const f=fsc();window.S.weeklyHistory.push({week:window.S.weekNum,family:f,opp:window.S.oppScore});
+  const won=f>window.S.oppScore;window.S.weekNum++;
+  window.S.days=[false,false,false,false,false,false,false];
+  window.S.oppScore=Math.floor(Math.random()*5);
+  window.S.dailyTasks.forEach(t=>{t.status='todo';});
+  window.S.weeklyTasks.forEach(t=>{t.status='todo';t.assignedWeek=window.S.weekNum;});
+  window.S.extraTasks.forEach(t=>{t.status='todo';t.owner=null;});
+  save();renderTab(window.activeTab);
+  if(won){setTimeout(()=>{showWinFX();spawnConf(80,'win');},200);}
+  else{alert(`Week ${window.S.weekNum-1} closed! Week ${window.S.weekNum} starts now \uD83D\uDCAA`);}
+}
+
+// ═══════════════════════════════════════
+// MODALS
+// ═══════════════════════════════════════
+let _mc={};
+function openModal(type,extra){
+  _mc={type,extra};
+  const mc=document.getElementById('modal-content');
+  document.getElementById('modal-overlay').classList.remove('hidden');
+  const kidOpts=KIDS.map(k=>`<option value="${k}">${uName(k)}</option>`).join('');
+  if(type==='dailyTask'){
+    mc.innerHTML=`<div class="modal-title">Add Daily Task</div><label class="modal-label">Task Name</label><input class="modal-input" id="m-tn" placeholder="e.g. Clean bathroom sink" autocomplete="off"><label class="modal-label">Assign To</label><select class="modal-select" id="m-to">${kidOpts}</select><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitDailyTask()">Add</button></div>`;
+    setTimeout(()=>document.getElementById('m-tn').focus(),100);
+  } else if(type==='weeklyTask'){
+    mc.innerHTML=`<div class="modal-title">Add Weekly Task</div><label class="modal-label">Task Name</label><input class="modal-input" id="m-tn" placeholder="e.g. Vacuum living room" autocomplete="off"><label class="modal-label">Assign To</label><select class="modal-select" id="m-to">${kidOpts}</select><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitWeeklyTask()">Add</button></div>`;
+    setTimeout(()=>document.getElementById('m-tn').focus(),100);
+  } else if(type==='extraTask'){
+    mc.innerHTML=`<div class="modal-title">Add Extra Task</div><label class="modal-label">Task Name</label><input class="modal-input" id="m-tn" placeholder="e.g. Wash windows" autocomplete="off"><label class="modal-label">Hourly Rate ($)</label><input class="modal-input" id="m-rate" type="number" value="10" min="1"><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitExtraTask()">Add</button></div>`;
+    setTimeout(()=>document.getElementById('m-tn').focus(),100);
+  } else if(type==='ids'){
+    window._idt='I';
+    mc.innerHTML=`<div class="modal-title">Add IDS Item</div><div class="ids-type-btns"><button class="ids-type-btn ids-active-I" id="ib-I" onclick="setIdsType('I')">Issue</button><button class="ids-type-btn" id="ib-D" onclick="setIdsType('D')">Discuss</button><button class="ids-type-btn" id="ib-S" onclick="setIdsType('S')">Solve</button><button class="ids-type-btn" id="ib-O" onclick="setIdsType('O')">Open</button></div><input class="modal-input" id="m-it" placeholder="Issue or topic" autocomplete="off"><input class="modal-input" id="m-io" placeholder="Owner" value="Family" autocomplete="off"><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitIDS()">Add</button></div>`;
+    setTimeout(()=>document.getElementById('m-it').focus(),100);
+  } else if(type==='project'){
+    mc.innerHTML=`<div class="modal-title">New Quest \u26A1</div><label class="modal-label">Quest Name</label><input class="modal-input" id="m-pn" placeholder="e.g. Garage Renovation" autocomplete="off"><label class="modal-label">Enemy to Defeat</label><input class="modal-input" id="m-pe" placeholder="e.g. Voldemort" autocomplete="off"><label class="modal-label">Completion Prize \uD83C\uDFC6</label><input class="modal-input" id="m-pr" placeholder="e.g. Pizza dinner, $20 each" autocomplete="off"><label class="modal-label">Milestones (up to 25)</label><div id="m-ms-list"></div><button class="add-btn" onclick="addMsField()">+ Add Milestone</button><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitProject()">Create Quest</button></div>`;
+    addMsField();addMsField();addMsField();
+    setTimeout(()=>document.getElementById('m-pn').focus(),100);
+  } else if(type==='projectEdit'){
+    const p=window.S.projects.find(p=>p.id===extra);if(!p)return;
+    const done=p.milestones.filter(m=>m.status==='approved').length,total=p.milestones.length;
+    const sopts=['notstarted','inprogress','done'].map(s=>`<option value="${s}" ${p.status===s?'selected':''}>${{notstarted:'Not Started',inprogress:'In Progress',done:'Complete'}[s]}</option>`).join('');
+    const msHtml=p.milestones.map((m,i)=>{
+      const ko=USERS.map(u=>`<option value="${u.id}" ${m.owner===u.id?'selected':''}>${u.name}</option>`).join('');
+      const weekOpts=[0,...Array.from({length:8},(_,j)=>window.S.weekNum+j)].map(w=>w===0?`<option value="" ${!m.dueWeek?'selected':''}>No date</option>`:`<option value="${w}" ${m.dueWeek===w?'selected':''}>Wk ${w}</option>`).join('');
+      const stOpts=['todo','pending_approval','approved'].map(s=>`<option value="${s}" ${m.status===s?'selected':''}>${{todo:'To Do',pending_approval:'Pending',approved:'Approved'}[s]}</option>`).join('');
+      return `<div class="ms-edit-row"><input type="text" value="${(m.text||'').replace(/"/g,'&quot;')}" onblur="updateMsText(${p.id},${i},this.value)" placeholder="Milestone ${i+1}"><select onchange="updateMsOwner(${p.id},${i},this.value)" title="Assign"><option value="">Unassigned</option>${ko}</select><select onchange="updateMsDue(${p.id},${i},this.value)" title="Due week">${weekOpts}</select><select onchange="updateMsStatus(${p.id},${i},this.value)" title="Status">${stOpts}</select><button class="ms-rm" onclick="removeMsFromProj(${p.id},${i})">\u00D7</button></div>`;
+    }).join('');
+    mc.innerHTML=`<div class="modal-title">\u26A1 ${p.name}</div><div style="font-size:11px;color:var(--gray-3);margin-bottom:10px">vs ${p.enemy} \u00B7 Week ${p.weekStarted}+ \u00B7 ${done}/${total} complete</div><label class="modal-label">Status</label><select class="modal-select" onchange="changeProjStatus(${p.id},this.value)">${sopts}</select><label class="modal-label">Milestones</label><div id="ms-edit-${p.id}">${msHtml}</div><button class="add-btn" onclick="addMsToProject(${p.id})" style="margin-bottom:8px">+ Add Milestone</button><label class="modal-label">Completion Prize \uD83C\uDFC6</label><input class="modal-input" id="m-pprize" value="${(p.prize||'').replace(/"/g,'&quot;')}" placeholder="e.g. Pizza dinner, $20 each" onblur="updateProjPrize(${p.id},this.value)"><label class="modal-label">Notes</label><input class="modal-input" id="m-pnotes" value="${(p.notes||'').replace(/"/g,'&quot;')}" placeholder="Optional notes" onblur="updateProjNotes(${p.id},this.value)"><div style="display:flex;align-items:center;gap:7px;margin:7px 0 12px"><input type="checkbox" ${p.spellWarning?'checked':''} onchange="toggleSpell(${p.id},this.checked)" style="width:14px;height:14px;cursor:pointer"><span style="font-size:12px;color:var(--red);font-weight:500">\u26A1 Spell Warning</span></div><div class="modal-actions"><button class="btn-danger" onclick="deleteProject(${p.id})">Delete Quest</button><button class="btn-primary" onclick="closeModal()">Done</button></div>`;
+  } else if(type==='editTask'){
+    const {id,type:tt} = extra;
+    let t;
+    if(tt==='daily') t=window.S.dailyTasks.find(t=>t.id===id);
+    else if(tt==='weekly') t=window.S.weeklyTasks.find(t=>t.id===id);
+    else t=window.S.extraTasks.find(t=>t.id===id);
+    if(!t) return;
+    const allUserOpts=USERS.map(u=>`<option value="${u.id}" ${t.owner===u.id?'selected':''}>${u.name}</option>`).join('')+`<option value="family" ${t.owner==='family'?'selected':''}>Family</option>`;
+    const rateField=tt==='extra'?`<label class="modal-label">Hourly Rate ($)</label><input class="modal-input" id="m-rate" type="number" value="${t.rate||10}" min="1">`:'';
+    mc.innerHTML=`<div class="modal-title">Edit Task</div><label class="modal-label">Task Name</label><input class="modal-input" id="m-tn" value="${t.name.replace(/"/g,'&quot;')}" autocomplete="off"><label class="modal-label">Assign To</label><select class="modal-select" id="m-to">${allUserOpts}</select>${rateField}<div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitEditTask(${id},'${tt}')">Save</button></div>`;
+    setTimeout(()=>document.getElementById('m-tn').focus(),100);
+  } else if(type==='reward'){
+    mc.innerHTML=`<div class="modal-title">\uD83C\uDFC6 Weekly Reward</div><input class="modal-input" id="m-rt" value="${window.S.reward.title}" placeholder="Reward title" autocomplete="off"><input class="modal-input" id="m-rs" value="${window.S.reward.sub}" placeholder="Subtitle" autocomplete="off"><div class="modal-actions"><button class="btn-cancel" onclick="closeModal()">Cancel</button><button class="btn-primary" onclick="submitReward()">Save</button></div>`;
+    setTimeout(()=>document.getElementById('m-rt').focus(),100);
+  }
+}
+
+function setIdsType(t){window._idt=t;['I','D','S','O'].forEach(tt=>{const b=document.getElementById('ib-'+tt);if(b)b.className='ids-type-btn'+(t===tt?' ids-active-'+tt:'');});}
+function addMsField(){
+  const list=document.getElementById('m-ms-list');if(!list||list.children.length>=25)return;
+  const i=list.children.length;
+  const ko=USERS.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');
+  const weekOpts=[0,...Array.from({length:8},(_,j)=>window.S.weekNum+j)].map(w=>w===0?`<option value="">No date</option>`:`<option value="${w}">Wk ${w}</option>`).join('');
+  const row=document.createElement('div');row.className='ms-edit-row';
+  row.innerHTML=`<input type="text" placeholder="Milestone ${i+1}" autocomplete="off"><select title="Assign to"><option value="">Unassigned</option>${ko}</select><select title="Due week">${weekOpts}</select><button class="ms-rm" onclick="this.parentElement.remove()">\u00D7</button>`;
+  list.appendChild(row);
+}
+function submitDailyTask(){const n=document.getElementById('m-tn').value.trim(),o=document.getElementById('m-to').value;if(!n)return;window.S.dailyTasks.push({id:window.S.nextDailyId++,name:n,owner:o,status:'todo'});save();closeModal();renderTab(window.activeTab);}
+function submitWeeklyTask(){const n=document.getElementById('m-tn').value.trim(),o=document.getElementById('m-to').value;if(!n)return;window.S.weeklyTasks.push({id:window.S.nextWeeklyId++,name:n,owner:o,status:'todo',assignedWeek:window.S.weekNum});save();closeModal();renderTab(window.activeTab);}
+function submitEditTask(id,type){
+  const n=document.getElementById('m-tn').value.trim();
+  const o=document.getElementById('m-to').value;
+  if(!n) return;
+  let t;
+  if(type==='daily') t=window.S.dailyTasks.find(t=>t.id===id);
+  else if(type==='weekly') t=window.S.weeklyTasks.find(t=>t.id===id);
+  else t=window.S.extraTasks.find(t=>t.id===id);
+  if(t){
+    t.name=n; t.owner=o;
+    if(type==='extra'){const r=parseInt(document.getElementById('m-rate').value)||10; t.rate=r;}
+  }
+  save(); closeModal(); renderTab(window.activeTab);
+}
+function submitExtraTask(){const n=document.getElementById('m-tn').value.trim(),r=parseInt(document.getElementById('m-rate').value)||10;if(!n)return;window.S.extraTasks.push({id:window.S.nextExtraId++,name:n,owner:null,rate:r,status:'todo'});save();closeModal();renderTab(window.activeTab);}
+function submitIDS(){const t=document.getElementById('m-it').value.trim(),o=document.getElementById('m-io').value.trim()||'Family';if(!t)return;window.S.ids.push({id:window.S.nextIdsId++,type:window._idt||'I',text:t,owner:o,resolved:false});save();closeModal();renderTab(window.activeTab);}
+function submitProject(){
+  const n=document.getElementById('m-pn').value.trim(),e=document.getElementById('m-pe').value.trim(),pr=(document.getElementById('m-pr')||{value:''}).value.trim();if(!n)return;
+  const list=document.getElementById('m-ms-list');
+  const ms=[...list.querySelectorAll('.ms-edit-row')].map((row,i)=>{
+    const inp=row.querySelector('input[type=text]'),sels=row.querySelectorAll('select');
+    return {id:window.S.nextMsId++,text:inp?inp.value.trim():'',owner:sels[0]?sels[0].value||null:null,dueWeek:sels[1]?parseInt(sels[1].value)||null:null,status:'todo',weekCompleted:null};
+  }).filter(m=>m.text);
+  if(!ms.length){alert('Add at least 1 milestone!');return;}
+  window.S.projects.push({id:window.S.nextProjectId++,name:n,enemy:e||'Unknown',status:'notstarted',weekStarted:window.S.weekNum,milestones:ms,spellWarning:false,notes:'',prize:pr||''});
+  save();closeModal();renderTab(window.activeTab);
+}
+function submitReward(){window.S.reward.title=document.getElementById('m-rt').value.trim()||window.S.reward.title;window.S.reward.sub=document.getElementById('m-rs').value.trim()||window.S.reward.sub;save();closeModal();renderTab(window.activeTab);}
+function updateMsText(pid,idx,val){const p=window.S.projects.find(p=>p.id===pid);if(p&&p.milestones[idx]){p.milestones[idx].text=val;save();}}
+function updateMsOwner(pid,idx,val){const p=window.S.projects.find(p=>p.id===pid);if(p&&p.milestones[idx]){p.milestones[idx].owner=val||null;save();}}
+function updateMsDue(pid,idx,val){const p=window.S.projects.find(p=>p.id===pid);if(p&&p.milestones[idx]){p.milestones[idx].dueWeek=parseInt(val)||null;save();}}
+function updateMsStatus(pid,idx,val){
+  const p=window.S.projects.find(p=>p.id===pid);if(!p)return;
+  const m=p.milestones[idx];if(!m)return;
+  const prev=m.status;m.status=val;
+  if(val==='approved'&&prev!=='approved'){m.weekCompleted=window.S.weekNum;if(m.owner)window.S.scores[m.owner]=(window.S.scores[m.owner]||0)+30;}
+  if(p.milestones.every(m=>m.status==='approved')){p.status='done';setTimeout(()=>showQuestFX(p.name),200);}
+  else if(p.milestones.some(m=>m.status==='approved'))p.status='inprogress';
+  save();
+}
+function removeMsFromProj(pid,idx){const p=window.S.projects.find(p=>p.id===pid);if(!p)return;if(p.milestones.length<=1){alert('Need at least 1 milestone');return;}p.milestones.splice(idx,1);save();openModal('projectEdit',pid);}
+function addMsToProject(pid){const p=window.S.projects.find(p=>p.id===pid);if(!p)return;if(p.milestones.length>=25){alert('Max 25 milestones');return;}p.milestones.push({id:window.S.nextMsId++,text:'',owner:null,dueWeek:null,status:'todo',weekCompleted:null});save();openModal('projectEdit',pid);}
+function updateProjNotes(pid,val){const p=window.S.projects.find(p=>p.id===pid);if(p){p.notes=val;save();}}
+function updateProjPrize(pid,val){const p=window.S.projects.find(p=>p.id===pid);if(p){p.prize=val;save();}}
+function changeProjStatus(pid,status){const p=window.S.projects.find(p=>p.id===pid);if(p){p.status=status;save();}}
+function toggleSpell(pid,checked){const p=window.S.projects.find(p=>p.id===pid);if(p){p.spellWarning=checked;if(checked)showSpellFX('Missed milestone!');save();}}
+function deleteProject(id){if(!confirm('Delete this quest?'))return;window.S.projects=window.S.projects.filter(p=>p.id!==id);save();closeModal();renderTab(window.activeTab);}
+function closeModal(){document.getElementById('modal-overlay').classList.add('hidden');}
+function closeModalOutside(e){if(e.target===document.getElementById('modal-overlay'))closeModal();}
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal();});
+
+// ═══════════════════════════════════════
+// FX
+// ═══════════════════════════════════════
+function clearFx(){document.getElementById('fx-overlay').innerHTML='';}
+function lbs(n){return Array.from({length:n},(_,i)=>`<div class="lb" style="left:${5+i*(90/n)}%;animation-delay:${i*.06}s;opacity:.5"></div>`).join('');}
+function showGoalFX(){clearFx();const ov=document.getElementById('fx-overlay');const b=document.createElement('div');b.className='fx-burst';b.innerHTML=`<div class="fx-bg-green"></div><div class="lc">${lbs(6)}</div><div style="display:flex;flex-direction:column;align-items:center;z-index:2;position:relative"><div class="fx-text-goal">GOAL! \u26BD</div><div class="fx-sub fx-sub-goal">+1 POINT</div></div>`;ov.appendChild(b);setTimeout(clearFx,1800);}
+function showSpellFX(sub){clearFx();const ov=document.getElementById('fx-overlay');const b=document.createElement('div');b.className='fx-burst';b.innerHTML=`<div class="fx-bg-purple"></div><div class="lc">${lbs(8)}</div><div style="display:flex;flex-direction:column;align-items:center;z-index:2;position:relative"><div class="fx-text-spell">\u26A1 AVADA!</div><div class="fx-sub fx-sub-spell">${sub||'SPELL CAST'}</div></div>`;ov.appendChild(b);setTimeout(clearFx,2000);}
+function showQuestFX(name){clearFx();const ov=document.getElementById('fx-overlay');const b=document.createElement('div');b.className='fx-burst';b.innerHTML=`<div class="fx-bg-gold"></div><div style="display:flex;flex-direction:column;align-items:center;z-index:2;position:relative"><div class="fx-text-win">QUEST DONE!</div><div class="fx-sub fx-sub-win">${name||''}</div></div>`;ov.appendChild(b);spawnConf(60,'win');setTimeout(clearFx,3200);}
+function showWinFX(){clearFx();const ov=document.getElementById('fx-overlay');const b=document.createElement('div');b.className='fx-burst';b.innerHTML=`<div class="fx-bg-gold"></div><div style="display:flex;flex-direction:column;align-items:center;z-index:2;position:relative"><div class="fx-text-win">WE WIN! \uD83C\uDFC6</div><div class="fx-sub fx-sub-win">WEEK ${window.S?window.S.weekNum-1:''} VICTORY</div></div>`;ov.appendChild(b);setTimeout(clearFx,3500);}
+function spawnPtsFloat(x,y,text,color){const el=document.createElement('div');el.className='pts-float';el.textContent=text;el.style.cssText+=`left:${x-18}px;top:${y-18}px;color:${color};`;document.body.appendChild(el);setTimeout(()=>el.remove(),1500);}
+function spawnConf(n,mode){const colors=mode==='goal'?['#4ADE80','#fff','#E8A200','#60A5FA']:['#E8A200','#fff','#F87171','#C084FC','#4ADE80','#FB923C'];for(let i=0;i<n;i++){const p=document.createElement('div');p.className='conf';const left=Math.random()*100,delay=Math.random()*.8,dur=1.5+Math.random();const color=colors[Math.floor(Math.random()*colors.length)],size=5+Math.random()*7;p.style.cssText=`left:${left}vw;width:${size}px;height:${size}px;background:${color};animation:conf-fall ${dur}s ${delay}s linear forwards;border-radius:${Math.random()>.5?'50%':'2px'}`;document.body.appendChild(p);setTimeout(()=>p.remove(),(dur+delay)*1000+200);}}
+function spawnSparks(x,y,n,color){for(let i=0;i<n;i++){const p=document.createElement('div');const angle=Math.random()*Math.PI*2,dist=25+Math.random()*55;const tx=Math.cos(angle)*dist,ty=Math.sin(angle)*dist;p.style.cssText=`position:fixed;width:5px;height:5px;border-radius:50%;background:${color};left:${x}px;top:${y}px;pointer-events:none;z-index:9997;`;document.body.appendChild(p);p.animate([{transform:'translate(0,0) scale(1)',opacity:1},{transform:`translate(${tx}px,${ty}px) scale(0)`,opacity:0}],{duration:650,easing:'ease-out',fill:'forwards'});setTimeout(()=>p.remove(),700);}}
+</script>
+</body>
+</html>
